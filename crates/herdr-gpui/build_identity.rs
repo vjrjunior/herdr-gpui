@@ -116,6 +116,10 @@ pub fn validate_pr(value: &str) -> Option<&str> {
     .then_some(value)
 }
 
+pub fn validate_app_name(value: &str) -> Option<&str> {
+    (!value.trim().is_empty() && !value.chars().any(char::is_control)).then_some(value)
+}
+
 pub fn lookup_pr(manifest: &Path, branch: &str, gh: &Path, timeout: Duration) -> Option<String> {
     let mut child = anchored(&mut Command::new(gh), manifest)
         .args([

@@ -3,7 +3,7 @@
 //! any credential store key off.
 
 // Every window carries the product name; the focused space follows it.
-pub(crate) const WINDOW_TITLE: &str = "Herdr";
+pub(crate) const WINDOW_TITLE: &str = env!("HERDR_BUILD_APP_NAME");
 
 // Even tab cells, as on herdr.dev, so short labels do not collapse to a sliver.
 pub(crate) const TAB_WIDTH: f32 = 64.;

@@ -298,7 +298,7 @@ pub const COMMANDS: &[CommandInfo] = &[
     CommandInfo {
         command: Command::About,
         name: "about",
-        label: "About Herdr",
+        label: concat!("About ", env!("HERDR_BUILD_APP_NAME")),
         shortcuts: &[],
     },
 ];
