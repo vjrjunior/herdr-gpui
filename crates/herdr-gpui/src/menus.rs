@@ -76,11 +76,11 @@ fn tab_layout_menu(current: TabLayoutMode) -> MenuItem {
 pub(crate) fn menus(layout: Layout, tabs: TabLayoutMode) -> Vec<Menu> {
     vec![
         Menu {
-            name: "Herdr".into(),
+            name: crate::WINDOW_TITLE.into(),
             disabled: false,
             items: vec![
                 MenuItem::action(
-                    "About Herdr",
+                    concat!("About ", env!("HERDR_BUILD_APP_NAME")),
                     RunCommand {
                         command: Command::About,
                     },
@@ -110,13 +110,13 @@ pub(crate) fn menus(layout: Layout, tabs: TabLayoutMode) -> Vec<Menu> {
                 #[cfg(target_os = "macos")]
                 MenuItem::separator(),
                 #[cfg(target_os = "macos")]
-                MenuItem::action("Hide Herdr", Hide),
+                MenuItem::action(concat!("Hide ", env!("HERDR_BUILD_APP_NAME")), Hide),
                 #[cfg(target_os = "macos")]
                 MenuItem::action("Hide Others", HideOthers),
                 #[cfg(target_os = "macos")]
                 MenuItem::action("Show All", ShowAll),
                 MenuItem::separator(),
-                MenuItem::action("Quit Herdr", Quit),
+                MenuItem::action(concat!("Quit ", env!("HERDR_BUILD_APP_NAME")), Quit),
             ],
         },
         Menu {
