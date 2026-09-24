@@ -11,6 +11,8 @@ enum BuildError {
     PrNumberEncoding(std::env::VarError),
     MockupFileEncoding,
     InvalidMockupFile,
+    InvalidAppName,
+    AppNameEncoding(std::env::VarError),
 }
 
 impl std::fmt::Display for BuildError {
@@ -25,6 +27,10 @@ impl std::fmt::Display for BuildError {
             Self::InvalidMockupFile => {
                 f.write_str("HERDR_MOCKUP_FILE must be an absolute path on one line")
             }
+            Self::InvalidAppName => {
+                f.write_str("HERDR_APP_NAME must be non-blank with no control characters")
+            }
+            Self::AppNameEncoding(_) => f.write_str("HERDR_APP_NAME is not valid Unicode"),
         }
     }
 }
@@ -32,11 +38,12 @@ impl std::fmt::Display for BuildError {
 impl std::error::Error for BuildError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            Self::PrNumberEncoding(error) => Some(error),
+            Self::PrNumberEncoding(error) | Self::AppNameEncoding(error) => Some(error),
             Self::MissingManifestDir
             | Self::InvalidPrNumber
             | Self::MockupFileEncoding
-            | Self::InvalidMockupFile => None,
+            | Self::InvalidMockupFile
+            | Self::InvalidAppName => None,
         }
     }
 }
@@ -45,6 +52,14 @@ fn main() -> Result<(), BuildError> {
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=build_identity.rs");
     println!("cargo:rerun-if-env-changed=HERDR_BUILD_PR_NUMBER");
+    println!("cargo:rerun-if-env-changed=HERDR_APP_NAME");
+    let app_name = match std::env::var("HERDR_APP_NAME") {
+        Ok(value) => build_identity::validate_app_name(&value)
+            .ok_or(BuildError::InvalidAppName)?
+            .to_owned(),
+        Err(std::env::VarError::NotPresent) => "Herdr".to_owned(),
+        Err(error) => return Err(BuildError::AppNameEncoding(error)),
+    };
     let manifest = std::path::PathBuf::from(
         std::env::var_os("CARGO_MANIFEST_DIR").ok_or(BuildError::MissingManifestDir)?,
     );
@@ -74,6 +89,7 @@ fn main() -> Result<(), BuildError> {
     );
     println!("cargo:rustc-env=HERDR_BUILD_BRANCH={}", identity.branch);
     println!("cargo:rustc-env=HERDR_BUILD_PR={pr}");
+    println!("cargo:rustc-env=HERDR_BUILD_APP_NAME={app_name}");
     if std::env::var_os("CARGO_FEATURE_MOCKUP").is_some() {
         mockup_scratch()?;
     }

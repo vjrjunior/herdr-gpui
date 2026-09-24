@@ -45,11 +45,11 @@ fn layout_menu(current: LayoutMode) -> MenuItem {
 pub(crate) fn menus(layout: Layout) -> Vec<Menu> {
     vec![
         Menu {
-            name: "Herdr".into(),
+            name: crate::WINDOW_TITLE.into(),
             disabled: false,
             items: vec![
                 MenuItem::action(
-                    "About Herdr",
+                    concat!("About ", env!("HERDR_BUILD_APP_NAME")),
                     RunCommand {
                         command: Command::About,
                     },
@@ -79,13 +79,13 @@ pub(crate) fn menus(layout: Layout) -> Vec<Menu> {
                 #[cfg(target_os = "macos")]
                 MenuItem::separator(),
                 #[cfg(target_os = "macos")]
-                MenuItem::action("Hide Herdr", Hide),
+                MenuItem::action(concat!("Hide ", env!("HERDR_BUILD_APP_NAME")), Hide),
                 #[cfg(target_os = "macos")]
                 MenuItem::action("Hide Others", HideOthers),
                 #[cfg(target_os = "macos")]
                 MenuItem::action("Show All", ShowAll),
                 MenuItem::separator(),
-                MenuItem::action("Quit Herdr", Quit),
+                MenuItem::action(concat!("Quit ", env!("HERDR_BUILD_APP_NAME")), Quit),
             ],
         },
         Menu {
@@ -424,7 +424,14 @@ mod tests {
     fn qa_menu_requires_explicit_feature() {
         let menus = menus(Layout::default());
         let names: Vec<_> = menus.iter().map(|menu| menu.name.as_ref()).collect();
-        let mut expected = vec!["Herdr", "File", "Edit", "View", "Terminal", "Window"];
+        let mut expected = vec![
+            crate::WINDOW_TITLE,
+            "File",
+            "Edit",
+            "View",
+            "Terminal",
+            "Window",
+        ];
         if cfg!(feature = "qa-menu") {
             expected.push("QA");
         }
@@ -629,20 +636,20 @@ mod tests {
         let menus = menus(Layout::default());
         let herdr = menus
             .iter()
-            .find(|menu| menu.name.as_ref() == "Herdr")
+            .find(|menu| menu.name.as_ref() == crate::WINDOW_TITLE)
             .unwrap();
         assert_eq!(
             action_names(herdr),
             [
-                "About Herdr",
+                format!("About {}", crate::WINDOW_TITLE).as_str(),
                 "Command Palette",
                 "Settings",
                 "Keyboard Shortcuts",
                 "Check for Updates...",
-                "Hide Herdr",
+                format!("Hide {}", crate::WINDOW_TITLE).as_str(),
                 "Hide Others",
                 "Show All",
-                "Quit Herdr",
+                format!("Quit {}", crate::WINDOW_TITLE).as_str(),
             ]
         );
         // Hiding sits apart from quitting.
@@ -685,17 +692,17 @@ mod tests {
         let menus = menus(Layout::default());
         let herdr = menus
             .iter()
-            .find(|menu| menu.name.as_ref() == "Herdr")
+            .find(|menu| menu.name.as_ref() == crate::WINDOW_TITLE)
             .unwrap();
         assert_eq!(
             action_names(herdr),
             [
-                "About Herdr",
+                format!("About {}", crate::WINDOW_TITLE).as_str(),
                 "Command Palette",
                 "Settings",
                 "Keyboard Shortcuts",
                 "Check for Updates...",
-                "Quit Herdr",
+                format!("Quit {}", crate::WINDOW_TITLE).as_str(),
             ]
         );
         let window = menus
