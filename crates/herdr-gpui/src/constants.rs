@@ -3,7 +3,7 @@
 //! any credential store key off.
 
 // Every window carries the product name; the focused space follows it.
-pub(crate) const WINDOW_TITLE: &str = "Herdr";
+pub(crate) const WINDOW_TITLE: &str = env!("HERDR_BUILD_APP_NAME");
 
 // The bundle identifier and release version are the updater's, defined once
 // beside the code that keys off them.
