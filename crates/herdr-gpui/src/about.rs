@@ -55,7 +55,7 @@ impl HerdrWindow {
                     .text_size(px(font.size * 1.8))
                     .line_height(px(font.size * 2.2))
                     .font_weight(FontWeight::SEMIBOLD)
-                    .child("Herdr"),
+                    .child(crate::WINDOW_TITLE),
             )
             .child(
                 div()
@@ -212,18 +212,18 @@ mod tests {
     fn about_leads_the_application_menu() {
         let menus = crate::menus(Default::default());
         let application = menus.first().unwrap();
-        assert_eq!(application.name.as_ref(), "Herdr");
+        assert_eq!(application.name.as_ref(), crate::WINDOW_TITLE);
         let MenuItem::Action { name, action, .. } = application.items.first().unwrap() else {
             panic!("the application menu must start with an action");
         };
-        assert_eq!(name.as_ref(), "About Herdr");
+        assert_eq!(name.as_ref(), format!("About {}", crate::WINDOW_TITLE));
         assert!(action.partial_eq(&crate::RunCommand {
             command: crate::controls::Command::About,
         }));
         assert!(matches!(application.items[1], MenuItem::Separator));
         assert!(matches!(
             application.items.last().unwrap(),
-            MenuItem::Action { name, .. } if name.as_ref() == "Quit Herdr"
+            MenuItem::Action { name, .. } if name.as_ref() == format!("Quit {}", crate::WINDOW_TITLE)
         ));
     }
 

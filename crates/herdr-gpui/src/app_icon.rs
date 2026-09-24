@@ -24,7 +24,7 @@ pub fn install() {
     let Some(main_thread) = MainThreadMarker::new() else {
         return;
     };
-    NSProcessInfo::processInfo().setProcessName(&NSString::from_str("Herdr"));
+    NSProcessInfo::processInfo().setProcessName(&NSString::from_str(crate::WINDOW_TITLE));
     if NSBundle::mainBundle()
         .objectForInfoDictionaryKey(&NSString::from_str("CFBundleIconFile"))
         .is_some()

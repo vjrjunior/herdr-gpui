@@ -128,7 +128,14 @@ fn view_menu_lists_every_layout_in_groups_and_checks_the_current_one() {
 fn qa_menu_requires_explicit_feature() {
     let menus = menus(Layout::default());
     let names: Vec<_> = menus.iter().map(|menu| menu.name.as_ref()).collect();
-    let mut expected = vec!["Herdr", "File", "Edit", "View", "Terminal", "Window"];
+    let mut expected = vec![
+        crate::WINDOW_TITLE,
+        "File",
+        "Edit",
+        "View",
+        "Terminal",
+        "Window",
+    ];
     if cfg!(feature = "qa-menu") {
         expected.push("QA");
     }
@@ -333,20 +340,20 @@ fn macos_menus_carry_hide_and_minimize(cx: &mut gpui::TestAppContext) {
     let menus = menus(Layout::default());
     let herdr = menus
         .iter()
-        .find(|menu| menu.name.as_ref() == "Herdr")
+        .find(|menu| menu.name.as_ref() == crate::WINDOW_TITLE)
         .unwrap();
     assert_eq!(
         action_names(herdr),
         [
-            "About Herdr",
+            format!("About {}", crate::WINDOW_TITLE).as_str(),
             "Command Palette",
             "Settings",
             "Keyboard Shortcuts",
             "Check for Updates...",
-            "Hide Herdr",
+            format!("Hide {}", crate::WINDOW_TITLE).as_str(),
             "Hide Others",
             "Show All",
-            "Quit Herdr",
+            format!("Quit {}", crate::WINDOW_TITLE).as_str(),
         ]
     );
     // Hiding sits apart from quitting.
@@ -389,17 +396,17 @@ fn hide_and_minimize_are_macos_only() {
     let menus = menus(Layout::default());
     let herdr = menus
         .iter()
-        .find(|menu| menu.name.as_ref() == "Herdr")
+        .find(|menu| menu.name.as_ref() == crate::WINDOW_TITLE)
         .unwrap();
     assert_eq!(
         action_names(herdr),
         [
-            "About Herdr",
+            format!("About {}", crate::WINDOW_TITLE).as_str(),
             "Command Palette",
             "Settings",
             "Keyboard Shortcuts",
             "Check for Updates...",
-            "Quit Herdr",
+            format!("Quit {}", crate::WINDOW_TITLE).as_str(),
         ]
     );
     let window = menus

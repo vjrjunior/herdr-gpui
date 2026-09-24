@@ -3,7 +3,7 @@
 //! any credential store key off.
 
 // Every window carries the product name; the focused space follows it.
-pub(crate) const WINDOW_TITLE: &str = "Herdr";
+pub(crate) const WINDOW_TITLE: &str = env!("HERDR_BUILD_APP_NAME");
 
 // The macOS bundle identifier, also the Linux app ID and Windows AppUserModelID.
 pub(crate) const APP_ID: &str = "so.pen.herdr-gpui";

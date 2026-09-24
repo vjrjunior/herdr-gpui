@@ -265,6 +265,16 @@ fn pr_validation() {
 }
 
 #[test]
+fn app_name_validation() {
+    for value in ["Herdr", "Orbita", "Herdr VJR", "Órbita"] {
+        assert_eq!(validate_app_name(value), Some(value));
+    }
+    for value in ["", " ", "\t", "Orbita\n", "Or\rbita", "Orbita\u{0}"] {
+        assert_eq!(validate_app_name(value), None);
+    }
+}
+
+#[test]
 fn separate_git_directory_is_not_a_linked_worktree() {
     let repo = Sandbox::new();
     let metadata = repo.0.join("metadata");
