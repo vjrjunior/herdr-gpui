@@ -9,6 +9,7 @@
 //! context. Changing it reinstalls the menus and redraws every window; text
 //! a view already built keeps its language until it is built again.
 
+mod app_name;
 mod check;
 mod current;
 pub(crate) mod errors;
@@ -72,7 +73,7 @@ pub(crate) fn english(id: &str, args: &[(&str, FluentValue<'_>)]) -> String {
 
 fn format(catalog: &Catalog, id: &str, args: &[(&str, FluentValue<'_>)]) -> String {
     if args.is_empty() {
-        return catalog.text(id);
+        return app_name::named(id, catalog.text(id));
     }
     let mut fluent = FluentArgs::with_capacity(args.len());
     for (name, value) in args {
