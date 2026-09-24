@@ -66,7 +66,7 @@ if [ "$ci" = 1 ]; then
     just ci
 fi
 
-just bundle
+HERDR_APP_NAME="$app_name" just bundle
 
 built=target/release/Herdr.app
 plist="$built/Contents/Info.plist"
