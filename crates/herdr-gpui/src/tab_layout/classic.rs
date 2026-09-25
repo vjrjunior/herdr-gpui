@@ -63,7 +63,7 @@ impl TabLayout for Classic {
     fn colors(&self, state: TabState, theme: &Theme) -> (u32, u32) {
         match (state.selected, state.active) {
             (true, true) => {
-                let background = theme.primary_wash();
+                let background = theme.active_tab_fill();
                 (background, theme.text_on(background))
             }
             (true, false) => (theme.active, theme.foreground),

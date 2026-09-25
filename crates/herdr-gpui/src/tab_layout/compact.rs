@@ -45,7 +45,7 @@ impl TabLayout for Compact {
     fn colors(&self, state: TabState, theme: &Theme) -> (u32, u32) {
         match (state.selected, state.active) {
             (true, true) => {
-                let fill = theme.primary_wash();
+                let fill = theme.active_tab_fill();
                 (fill, theme.text_on(fill))
             }
             (true, false) => (theme.active, theme.foreground),

@@ -1,7 +1,9 @@
 //! Terminal and chrome colors: built-in palettes, Ghostty theme files, and
 //! where they are found.
 use super::Error;
-use super::{Config, ThemeParseError, config_root, home, omarchy};
+use super::{
+    ActiveTab, ChromeStyle, Config, SidebarSelection, ThemeParseError, config_root, home, omarchy,
+};
 use crate::{Result, contrast::Contrast};
 use std::{
     collections::HashSet,
@@ -193,7 +195,7 @@ impl Config {
         light: bool,
         directories: impl FnOnce() -> Result<Vec<PathBuf>>,
     ) -> Result<Theme> {
-        resolve(&self.theme, light, directories)
+        resolve(&self.theme, light, directories).map(|theme| self.theme_overrides.apply(theme))
     }
 
     /// `value`, any `theme` value such as a device's, for the system
@@ -317,8 +319,9 @@ pub struct Theme {
     /// Herdr's optional `sidebar_bg`, which colors only the sidebar. Unset,
     /// the sidebar stays on [`Self::surface`].
     pub sidebar: Option<u32>,
-    /// A desktop theme's own accent, as Omarchy's `colors.toml` names one.
-    /// Unset, [`Self::primary`] takes the palette's magenta.
+    /// A desktop theme's own accent, as Omarchy's `colors.toml` names one, or
+    /// the one `[theme_overrides]` pins. Unset, [`Self::primary`] takes the
+    /// palette's magenta.
     pub accent: Option<u32>,
     pub palette: [u32; 256],
     /// Applied by [`Theme::with_contrast`]; every theme loads as `Standard`.
@@ -326,6 +329,7 @@ pub struct Theme {
     /// The system accent standing in for the theme's, from
     /// [`Theme::with_accent`]; every theme loads without one.
     pub system_accent: Option<u32>,
+    pub chrome: ChromeStyle,
 }
 
 impl Default for Theme {
@@ -358,6 +362,7 @@ impl Default for Theme {
             palette,
             contrast: Contrast::Standard,
             system_accent: None,
+            chrome: ChromeStyle::default(),
         }
     }
 }
@@ -484,6 +489,17 @@ impl Theme {
     /// hue while staying quiet enough to sit behind text all day.
     pub fn primary_wash(&self) -> u32 {
         mix(self.surface, self.primary(), 22)
+    }
+
+    pub fn active_tab_fill(&self) -> u32 {
+        match self.chrome.active_tab {
+            ActiveTab::Wash => self.primary_wash(),
+            ActiveTab::Solid => self.primary(),
+        }
+    }
+
+    pub fn fills_selected_row(&self) -> bool {
+        self.chrome.sidebar_selection == SidebarSelection::Fill
     }
 
     /// Whichever of the theme's two text colors contrasts more with `fill`.
