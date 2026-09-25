@@ -199,7 +199,7 @@ impl HerdrWindow {
         // The toggle leads the bar so it stays put whether or not the sidebar
         // below it is showing, and can always bring the sidebar back.
         render(
-            self.theme.surface,
+            &self.theme,
             Some(
                 div()
                     .id("toggle-sidebar")
@@ -308,7 +308,11 @@ impl HerdrWindow {
 }
 
 /// `leading` sits right after the traffic lights, ahead of the draggable center.
-pub(super) fn render(surface: u32, leading: Option<AnyElement>) -> Stateful<Div> {
+pub(super) fn render(theme: &crate::config::Theme, leading: Option<AnyElement>) -> Stateful<Div> {
+    let background = match theme.chrome.titlebar {
+        crate::config::Titlebar::Tinted => rgb(theme.surface).blend(rgba(0xffffff1a)),
+        crate::config::Titlebar::Flat => rgb(theme.surface),
+    };
     // AppKit owns dragging; GPUI's macOS backend cannot start a custom move.
     div()
         .id("titlebar")
@@ -317,7 +321,7 @@ pub(super) fn render(surface: u32, leading: Option<AnyElement>) -> Stateful<Div>
         .flex_none()
         .w_full()
         .h(px(HEIGHT))
-        .bg(rgb(surface).blend(rgba(0xffffff1a)))
+        .bg(background)
         .child(div().flex_none().w(px(80.)).h_full())
         .children(leading)
         .child(

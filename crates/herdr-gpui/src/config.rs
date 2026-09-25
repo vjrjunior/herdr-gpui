@@ -104,6 +104,7 @@ pub struct Config {
     pub(crate) notification_overrides: NotificationSettings,
     pub clipboard_toast: ClipboardToast,
     pub layout: Layout,
+    pub theme_overrides: ThemeOverrides,
     pub keybindings: Keymap,
 }
 
@@ -471,6 +472,82 @@ pub struct Features {
     pub sidebar_hover_menu: bool,
 }
 
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[serde(default, deny_unknown_fields)]
+pub struct ThemeOverrides {
+    pub accent: Option<HexColor>,
+    pub chrome: Option<HexColor>,
+    pub active_tab: ActiveTab,
+    pub sidebar_selection: SidebarSelection,
+}
+
+impl ThemeOverrides {
+    fn apply(self, mut theme: Theme) -> Theme {
+        if let Some(HexColor(chrome)) = self.chrome {
+            theme.surface = chrome;
+            theme.chrome.titlebar = Titlebar::Flat;
+        }
+        theme.accent = self.accent.map(|HexColor(accent)| accent);
+        theme.chrome.active_tab = self.active_tab;
+        theme.chrome.sidebar_selection = self.sidebar_selection;
+        theme
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct HexColor(pub u32);
+
+impl<'de> Deserialize<'de> for HexColor {
+    fn deserialize<D: serde::Deserializer<'de>>(
+        deserializer: D,
+    ) -> std::result::Result<Self, D::Error> {
+        let text = String::deserialize(deserializer)?;
+        let hex = text.strip_prefix('#').unwrap_or(&text);
+        hex.bytes()
+            .all(|byte| byte.is_ascii_hexdigit())
+            .then_some(hex)
+            .filter(|hex| hex.len() == 6)
+            .and_then(|hex| u32::from_str_radix(hex, 16).ok())
+            .map(Self)
+            .ok_or_else(|| {
+                serde::de::Error::invalid_value(
+                    serde::de::Unexpected::Str(&text),
+                    &"a #RRGGBB color",
+                )
+            })
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum ActiveTab {
+    #[default]
+    Wash,
+    Solid,
+}
+
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum SidebarSelection {
+    #[default]
+    Fill,
+    Bold,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Titlebar {
+    #[default]
+    Tinted,
+    Flat,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct ChromeStyle {
+    pub titlebar: Titlebar,
+    pub active_tab: ActiveTab,
+    pub sidebar_selection: SidebarSelection,
+}
+
 #[derive(Clone, Debug, Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct GitHubConfig {
@@ -622,6 +699,7 @@ impl Default for Config {
             notification_overrides: NotificationSettings::default(),
             clipboard_toast: ClipboardToast::default(),
             layout: Layout::default(),
+            theme_overrides: ThemeOverrides::default(),
             keybindings: Keymap::default(),
             sidebar: font(monospace, 12.0),
             // Tabs are terminal chrome, so they read in the monospace face the
@@ -652,6 +730,7 @@ struct Settings {
     notifications: NotificationSettings,
     clipboard_toast: ClipboardToastSettings,
     layout: Layout,
+    theme_overrides: ThemeOverrides,
     keybindings: std::collections::BTreeMap<String, Binding>,
 }
 
@@ -1106,6 +1185,7 @@ impl Config {
             return Err(Error::InvalidSidebarGap);
         }
         config.layout = settings.layout;
+        config.theme_overrides = settings.theme_overrides;
         config.keybindings = Keymap::with_overrides(&settings.keybindings, &base.keys)?;
         if let Some(theme) = settings.theme {
             if theme.trim().is_empty() {
@@ -1453,7 +1533,7 @@ impl Config {
             return crate::herdr_settings::Settings::load()?.theme(false);
         }
         if let Some(theme) = Theme::builtin(name) {
-            return Ok(theme);
+            return Ok(self.theme_overrides.apply(theme));
         }
         let path = if let Some(relative) = name.strip_prefix("~/") {
             home()?.join(relative)
@@ -1489,7 +1569,9 @@ impl Config {
             })?
         };
         let text = fs::read_to_string(&path).map_err(|error| Error::from(error).at_path(&path))?;
-        Theme::parse_ghostty(&text).map_err(|error| error.at_path(&path))
+        Theme::parse_ghostty(&text)
+            .map(|theme| self.theme_overrides.apply(theme))
+            .map_err(|error| error.at_path(&path))
     }
 }
 
@@ -1521,6 +1603,8 @@ pub struct Theme {
     pub palette: [u32; 256],
     /// Applied by [`Theme::with_contrast`]; every theme loads as `Standard`.
     pub contrast: Contrast,
+    pub accent: Option<u32>,
+    pub chrome: ChromeStyle,
 }
 
 impl Default for Theme {
@@ -1549,6 +1633,8 @@ impl Default for Theme {
             muted: 0x827e91,
             palette,
             contrast: Contrast::Standard,
+            accent: None,
+            chrome: ChromeStyle::default(),
         }
     }
 }
@@ -1575,7 +1661,7 @@ impl Theme {
     /// The theme's primary accent, used for selection colors that must read as
     /// chosen rather than merely hovered.
     pub fn primary(&self) -> u32 {
-        self.palette[5]
+        self.accent.unwrap_or(self.palette[5])
     }
 
     /// Dimmed foreground for rows that are not the current one: upstream's
@@ -1589,6 +1675,17 @@ impl Theme {
     /// hue while staying quiet enough to sit behind text all day.
     pub fn primary_wash(&self) -> u32 {
         mix(self.surface, self.primary(), 22)
+    }
+
+    pub fn active_tab_fill(&self) -> u32 {
+        match self.chrome.active_tab {
+            ActiveTab::Wash => self.primary_wash(),
+            ActiveTab::Solid => self.primary(),
+        }
+    }
+
+    pub fn fills_selected_row(&self) -> bool {
+        self.chrome.sidebar_selection == SidebarSelection::Fill
     }
 
     /// Whichever of the theme's two text colors contrasts more with `fill`.
@@ -2353,6 +2450,85 @@ mod tests {
             Theme::builtin("Nord").context("missing builtin")?
         );
         Ok(())
+    }
+
+    #[test]
+    fn theme_overrides_default_to_the_derived_chrome() -> anyhow::Result<()> {
+        let config = Config::parse("")?;
+        assert_eq!(config.theme_overrides, ThemeOverrides::default());
+        let theme = config.theme_with_directories(|| Err(Error::MissingHome))?;
+        assert_eq!(theme, Theme::default());
+        assert_eq!(theme.primary(), theme.palette[5]);
+        assert_eq!(theme.active_tab_fill(), theme.primary_wash());
+        assert!(theme.fills_selected_row());
+        assert_eq!(theme.chrome.titlebar, Titlebar::Tinted);
+        Ok(())
+    }
+
+    #[test]
+    fn theme_overrides_pin_accent_chrome_tab_and_selection() -> anyhow::Result<()> {
+        let config = Config::parse(
+            "theme = \"Nord\"\n[theme_overrides]\naccent = \"#FFC799\"\nchrome = \"101010\"\nactive_tab = \"solid\"\nsidebar_selection = \"bold\"\n",
+        )?;
+        assert_eq!(
+            config.theme_overrides,
+            ThemeOverrides {
+                accent: Some(HexColor(0xffc799)),
+                chrome: Some(HexColor(0x101010)),
+                active_tab: ActiveTab::Solid,
+                sidebar_selection: SidebarSelection::Bold,
+            }
+        );
+        let theme = config.theme_with_directories(|| Err(Error::MissingHome))?;
+        let nord = Theme::builtin("Nord").context("missing builtin")?;
+        assert_eq!(theme.primary(), 0xffc799);
+        assert_eq!(theme.surface, 0x101010);
+        assert_eq!(theme.active_tab_fill(), 0xffc799);
+        assert!(!theme.fills_selected_row());
+        assert_eq!(theme.chrome.titlebar, Titlebar::Flat);
+        assert_eq!(
+            (theme.background, theme.foreground, theme.palette),
+            (nord.background, nord.foreground, nord.palette)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn theme_overrides_apply_to_ghostty_themes_and_merge_by_key() -> anyhow::Result<()> {
+        let temp = TempDirectory::new()?;
+        fs::write(
+            temp.0.join("VJR"),
+            "background = #101010\npalette = 5=#FFCFA8\n",
+        )?;
+        let config = Config::parse_layers(
+            [
+                "theme = \"VJR\"\n[theme_overrides]\naccent = \"#ffc799\"\n",
+                "[theme_overrides]\nactive_tab = \"solid\"\n",
+            ],
+            &Daemon::default(),
+        )?;
+        let theme = config.theme_with_directories(|| Ok(vec![temp.0.clone()]))?;
+        assert_eq!(theme.palette[5], 0xffcfa8);
+        assert_eq!(theme.primary(), 0xffc799);
+        assert_eq!(theme.active_tab_fill(), 0xffc799);
+        assert!(theme.fills_selected_row());
+        assert_eq!(theme.chrome.titlebar, Titlebar::Tinted);
+        Ok(())
+    }
+
+    #[test]
+    fn theme_overrides_reject_bad_colors_values_and_keys() {
+        for text in [
+            "[theme_overrides]\naccent = \"#12345\"",
+            "[theme_overrides]\naccent = \"#12345G\"",
+            "[theme_overrides]\nchrome = \"red\"",
+            "[theme_overrides]\nchrome = 1052688",
+            "[theme_overrides]\nactive_tab = \"bright\"",
+            "[theme_overrides]\nsidebar_selection = \"underline\"",
+            "[theme_overrides]\ntitlebar = \"flat\"",
+        ] {
+            assert!(Config::parse(text).is_err(), "accepted {text}");
+        }
     }
 
     #[test]

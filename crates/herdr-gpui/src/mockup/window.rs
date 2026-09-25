@@ -479,7 +479,7 @@ impl Render for MockupWindow {
             .line_height(px(config.ui.line_height()))
             .map(|root| {
                 #[cfg(target_os = "macos")]
-                let root = root.child(crate::titlebar::render(theme.surface, None));
+                let root = root.child(crate::titlebar::render(&theme, None));
                 root
             })
             .child(self.render_toolbar(cx))

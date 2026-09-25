@@ -997,7 +997,7 @@ impl Render for SettingsWindow {
             .text_color(rgb(theme.foreground))
             .map(|root| {
                 #[cfg(target_os = "macos")]
-                let root = root.child(crate::titlebar::render(theme.surface, None));
+                let root = root.child(crate::titlebar::render(theme, None));
                 root
             })
             .child(
