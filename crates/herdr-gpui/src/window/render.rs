@@ -57,7 +57,7 @@ impl Render for HerdrWindow {
                 // primary rather than as the hover tint used elsewhere; the rest
                 // recede into the strip, as they do in the reference UI.
                 let (background, text) = if tab.focused {
-                    let background = self.theme.primary_wash();
+                    let background = self.theme.active_tab_fill();
                     (background, self.theme.text_on(background))
                 } else {
                     (self.theme.surface, self.theme.muted)

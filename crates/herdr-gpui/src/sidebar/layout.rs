@@ -308,11 +308,12 @@ impl SidebarLook {
             .top(edge)
             .bottom(edge)
             .rounded(px(self.style.radius()));
+        let marked = focused && theme.fills_selected_row();
         match self.style.highlight() {
             Highlight::Fill => {
                 let active = theme.active;
                 layer
-                    .when(focused || highlighted, |layer| layer.bg(rgb(active)))
+                    .when(marked || highlighted, |layer| layer.bg(rgb(active)))
                     .group_hover(ROW_GROUP, move |s| s.bg(rgb(active)))
             }
             Highlight::Outline => {
@@ -321,9 +322,9 @@ impl SidebarLook {
                 layer
                     .border_1()
                     .border_color(rgba(0))
-                    .when(focused, |layer| layer.bg(selected).border_color(border))
-                    .when(!focused && highlighted, |layer| layer.bg(hover))
-                    .when(!focused, |layer| {
+                    .when(marked, |layer| layer.bg(selected).border_color(border))
+                    .when(!marked && highlighted, |layer| layer.bg(hover))
+                    .when(!marked, |layer| {
                         layer.group_hover(ROW_GROUP, move |s| s.bg(hover))
                     })
             }

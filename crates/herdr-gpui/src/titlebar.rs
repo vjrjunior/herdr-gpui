@@ -196,7 +196,7 @@ impl HerdrWindow {
 
     pub(super) fn render_titlebar(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let image = self.pr_profile().and_then(|p| p.avatar.clone());
-        render(self.theme.surface)
+        render(&self.theme)
             .children(self.render_git_button(cx))
             .child(
                 div()
@@ -264,7 +264,11 @@ impl HerdrWindow {
     }
 }
 
-pub(super) fn render(surface: u32) -> Stateful<Div> {
+pub(super) fn render(theme: &crate::config::Theme) -> Stateful<Div> {
+    let background = match theme.chrome.titlebar {
+        crate::config::Titlebar::Tinted => rgb(theme.surface).blend(rgba(0xffffff1a)),
+        crate::config::Titlebar::Flat => rgb(theme.surface),
+    };
     // AppKit owns dragging; GPUI's macOS backend cannot start a custom move.
     div()
         .id("titlebar")
@@ -273,7 +277,7 @@ pub(super) fn render(surface: u32) -> Stateful<Div> {
         .flex_none()
         .w_full()
         .h(px(HEIGHT))
-        .bg(rgb(surface).blend(rgba(0xffffff1a)))
+        .bg(background)
         .child(div().flex_none().w(px(80.)).h_full())
         .child(
             div()

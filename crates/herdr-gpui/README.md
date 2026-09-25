@@ -365,6 +365,11 @@ repeating the other field. `FontConfig::line_height()` returns `size * 20 / 14`.
 The `[features]` table holds opt-in behaviors as `Features`, with every flag off
 by default and unknown keys rejected like the other sections; Preferences lists
 each flag and its state read-only, since only the config file turns one on.
+The optional `[theme_overrides]` table pins chrome the theme would otherwise
+derive: `accent` replaces ANSI 5 as the accent, `chrome` sets the sidebar, tab
+strip, and untinted title bar background, `active_tab = "solid"` fills the current
+tab with the accent instead of a wash, and `sidebar_selection = "bold"` drops the
+selected row's band. Terminal colors always come from the theme itself.
 First-frame config and theme loading is read-only: no config lock, migration,
 writes, or fsync delays window creation. It reads local overrides (or the legacy
 file before migration) so the first frame uses the configured layout, theme, and
