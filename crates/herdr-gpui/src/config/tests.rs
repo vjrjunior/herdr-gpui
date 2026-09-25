@@ -18,6 +18,7 @@ mod sidebar_style;
 mod status_bar;
 mod system_themes;
 mod theme_files;
+mod theme_overrides;
 mod themes;
 
 struct TempDirectory(PathBuf);

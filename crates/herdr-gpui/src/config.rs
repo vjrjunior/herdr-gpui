@@ -17,6 +17,7 @@ pub(crate) mod sidebar;
 mod sidebar_style;
 pub(crate) mod status_bar;
 mod theme;
+mod theme_overrides;
 pub(crate) mod watch;
 
 use files::write_config;
@@ -45,6 +46,7 @@ use std::{
 pub use theme::Theme;
 pub(crate) use theme::ThemeName;
 pub(crate) use theme::mix;
+pub use theme_overrides::{ActiveTab, ChromeStyle, SidebarSelection, ThemeOverrides, Titlebar};
 
 const DEFAULT_CONFIG: &str = include_str!("../config-gpui.example.toml");
 // Compare the first line so Windows checkouts and editors can use CRLF.
@@ -100,6 +102,7 @@ pub struct Config {
     pub sidebar_style: SidebarStyle,
     /// Daemon sidebar rows, falling back to defaults when invalid.
     pub sidebar_layout: SidebarLayout,
+    pub theme_overrides: ThemeOverrides,
     pub keybindings: Keymap,
     /// The `[keybindings]` table `keybindings` was built from, kept so a
     /// device's server keys can be layered under the same GUI overrides.
@@ -300,6 +303,7 @@ impl Default for Config {
             layout: Layout::default(),
             sidebar_style: SidebarStyle::default(),
             sidebar_layout: SidebarLayout::default(),
+            theme_overrides: ThemeOverrides::default(),
             keybindings: Keymap::default(),
             keybinding_overrides: BTreeMap::new(),
             pane_keys: PaneKeys::new(),
@@ -342,6 +346,7 @@ struct Settings {
     clipboard_toast: ClipboardToastSettings,
     bell: BellConfig,
     layout: Layout,
+    theme_overrides: ThemeOverrides,
     keybindings: BTreeMap<String, Binding>,
     pane_keys: PaneKeys,
     devices: BTreeMap<String, DeviceSettings>,
@@ -627,6 +632,7 @@ impl Config {
         }
         config.layout = settings.layout;
         config.sidebar_style = settings.sidebar.style()?;
+        config.theme_overrides = settings.theme_overrides;
         config.keybindings =
             Keymap::with_overrides(&settings.keybindings, &settings.pane_keys, &base.keys)?;
         config.keybinding_overrides = settings.keybindings;

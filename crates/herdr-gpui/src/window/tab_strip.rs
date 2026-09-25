@@ -64,7 +64,7 @@ impl HerdrWindow {
         let active = !self.is_split() || self.active_group() == Some(group);
         match (selected, active) {
             (true, true) => {
-                let background = self.theme.primary_wash();
+                let background = self.theme.active_tab_fill();
                 (background, self.theme.text_on(background))
             }
             (true, false) => (self.theme.active, self.theme.foreground),

@@ -210,7 +210,7 @@ impl HerdrWindow {
     ) -> impl IntoElement {
         // The toggle leads the bar so it stays put whether or not the sidebar
         // below it is showing, and can always bring the sidebar back.
-        render(self.theme.surface, Some(self.sidebar_toggle(cx)), window)
+        render(&self.theme, Some(self.sidebar_toggle(cx)), window)
             .child(
                 div()
                     .debug_selector(|| "titlebar-center".into())
@@ -326,7 +326,15 @@ impl HerdrWindow {
 }
 
 /// `leading` sits right after the traffic lights, ahead of the draggable center.
-pub(super) fn render(surface: u32, leading: Option<AnyElement>, window: &Window) -> Stateful<Div> {
+pub(super) fn render(
+    theme: &crate::config::Theme,
+    leading: Option<AnyElement>,
+    window: &Window,
+) -> Stateful<Div> {
+    let background = match theme.chrome.titlebar {
+        crate::config::Titlebar::Tinted => rgb(theme.surface).blend(rgba(0xffffff1a)),
+        crate::config::Titlebar::Flat => rgb(theme.surface),
+    };
     let bar = div()
         .id("titlebar")
         .debug_selector(|| "titlebar".into())
@@ -334,7 +342,7 @@ pub(super) fn render(surface: u32, leading: Option<AnyElement>, window: &Window)
         .flex_none()
         .w_full()
         .h(px(HEIGHT))
-        .bg(rgb(surface).blend(rgba(0xffffff1a)))
+        .bg(background)
         .child(div().flex_none().w(px(LEADING)).h_full())
         .children(leading);
     movable(bar, window)
@@ -382,7 +390,7 @@ pub(crate) fn header(
 ) -> Option<Stateful<Div>> {
     (cfg!(target_os = "macos") || decorations::client(window)).then(|| {
         let buttons = controls(window, theme, close);
-        render(theme.surface, None, window).children(buttons)
+        render(theme, None, window).children(buttons)
     })
 }
 
