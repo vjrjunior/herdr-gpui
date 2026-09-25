@@ -1,6 +1,6 @@
 //! Terminal and chrome colors: built-in palettes, Ghostty theme files, and
 //! where they are found.
-use super::{Config, config_root, home};
+use super::{ActiveTab, ChromeStyle, Config, SidebarSelection, config_root, home};
 use crate::{Error, Result, contrast::Contrast, error::ThemeParseError};
 use std::{
     env, fs,
@@ -169,7 +169,7 @@ impl Config {
         light: bool,
         directories: impl FnOnce() -> Result<Vec<PathBuf>>,
     ) -> Result<Theme> {
-        resolve(&self.theme, light, directories)
+        resolve(&self.theme, light, directories).map(|theme| self.theme_overrides.apply(theme))
     }
 
     /// `value`, any `theme` value such as a device's, for the system
@@ -279,6 +279,8 @@ pub struct Theme {
     pub palette: [u32; 256],
     /// Applied by [`Theme::with_contrast`]; every theme loads as `Standard`.
     pub contrast: Contrast,
+    pub accent: Option<u32>,
+    pub chrome: ChromeStyle,
 }
 
 impl Default for Theme {
@@ -309,6 +311,8 @@ impl Default for Theme {
             sidebar: None,
             palette,
             contrast: Contrast::Standard,
+            accent: None,
+            chrome: ChromeStyle::default(),
         }
     }
 }
@@ -335,7 +339,7 @@ impl Theme {
     /// The theme's primary accent, used for selection colors that must read as
     /// chosen rather than merely hovered.
     pub fn primary(&self) -> u32 {
-        self.palette[5]
+        self.accent.unwrap_or(self.palette[5])
     }
 
     /// The sidebar's fill: Herdr's `sidebar_bg` when set, else the surface.
@@ -359,6 +363,17 @@ impl Theme {
     /// hue while staying quiet enough to sit behind text all day.
     pub fn primary_wash(&self) -> u32 {
         mix(self.surface, self.primary(), 22)
+    }
+
+    pub fn active_tab_fill(&self) -> u32 {
+        match self.chrome.active_tab {
+            ActiveTab::Wash => self.primary_wash(),
+            ActiveTab::Solid => self.primary(),
+        }
+    }
+
+    pub fn fills_selected_row(&self) -> bool {
+        self.chrome.sidebar_selection == SidebarSelection::Fill
     }
 
     /// Whichever of the theme's two text colors contrasts more with `fill`.
