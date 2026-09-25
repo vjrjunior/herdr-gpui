@@ -52,6 +52,7 @@ pub(crate) mod tab_layout;
 mod table;
 pub(crate) use sidebar_style::parse_hex;
 mod theme;
+mod theme_overrides;
 mod updates;
 pub(crate) mod watch;
 mod worktrees;
@@ -128,6 +129,7 @@ pub use tab_layout::TabLayoutMode;
 pub use theme::Theme;
 pub(crate) use theme::ThemeName;
 pub(crate) use theme::mix;
+pub use theme_overrides::{ActiveTab, ChromeStyle, SidebarSelection, ThemeOverrides, Titlebar};
 pub use updates::{UpdateChannel, UpdatesConfig};
 pub use zen::{Zen, ZenWidth};
 
@@ -271,6 +273,7 @@ pub struct Config {
     /// Blank space around every terminal's cells.
     pub terminal_padding: Padding,
     pub theme: String,
+    pub theme_overrides: ThemeOverrides,
     pub ui: FontConfig,
     /// Keys the file names that this build does not know, sorted. They are
     /// ignored, as Herdr ignores its own, so a config written by a newer
@@ -433,6 +436,7 @@ impl Default for Config {
             terminal: font(monospace, 14.0),
             terminal_padding: Padding::default(),
             theme: "Default".into(),
+            theme_overrides: ThemeOverrides::default(),
             ui: font(ui, 12.0),
             unknown_keys: Vec::new(),
             updates: UpdatesConfig::default(),
@@ -503,6 +507,7 @@ struct Settings {
     tabs: FontSettings,
     terminal: FontSettings,
     theme: Option<String>,
+    theme_overrides: ThemeOverrides,
     ui: FontSettings,
     updates: UpdatesConfig,
     usage: crate::usage::UsageConfig,
@@ -799,6 +804,7 @@ impl Config {
         )?;
         config.layout = settings.layout;
         config.sidebar_style = settings.sidebar.style()?;
+        config.theme_overrides = settings.theme_overrides;
         config.keybindings =
             Keymap::with_overrides(&settings.keybindings, &settings.pane_keys, &base.keys)?;
         config.keybinding_overrides = settings.keybindings;

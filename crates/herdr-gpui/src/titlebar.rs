@@ -254,7 +254,8 @@ impl HerdrWindow {
             )
             .into_any_element();
         render(
-            self.fill().tint(bar(self.theme.surface)),
+            self.fill()
+                .tint(bar(self.theme.surface, self.theme.chrome.titlebar)),
             Some(leading),
             window,
         )
@@ -394,7 +395,10 @@ impl HerdrWindow {
                                         .size(px(ATTENTION_DOT))
                                         .rounded_full()
                                         .border_2()
-                                        .border_color(bar(self.theme.surface))
+                                        .border_color(bar(
+                                            self.theme.surface,
+                                            self.theme.chrome.titlebar,
+                                        ))
                                         .bg(rgb(self.theme.ink(self.theme.palette[1]))),
                                 )
                             }),
@@ -410,8 +414,11 @@ impl HerdrWindow {
 }
 
 /// The bar's color, lifted a little off the theme's surface.
-fn bar(surface: u32) -> Hsla {
-    rgb(surface).blend(rgba(0xffffff1a)).into()
+fn bar(surface: u32, style: crate::config::Titlebar) -> Hsla {
+    match style {
+        crate::config::Titlebar::Tinted => rgb(surface).blend(rgba(0xffffff1a)).into(),
+        crate::config::Titlebar::Flat => rgb(surface).into(),
+    }
 }
 
 /// `leading` sits right after the traffic lights, ahead of the draggable center.
@@ -486,7 +493,7 @@ pub(crate) fn header(
 ) -> Option<Stateful<Div>> {
     (cfg!(target_os = "macos") || decorations::client(window)).then(|| {
         let buttons = controls(false, window, theme, close);
-        render(bar(theme.surface), None, window).children(buttons)
+        render(bar(theme.surface, theme.chrome.titlebar), None, window).children(buttons)
     })
 }
 

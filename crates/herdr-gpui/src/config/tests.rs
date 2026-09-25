@@ -50,6 +50,7 @@ mod system_themes;
 mod tab_layout;
 mod terminal_padding;
 mod theme_files;
+mod theme_overrides;
 mod themes;
 mod update_channel;
 mod usage_inline;
