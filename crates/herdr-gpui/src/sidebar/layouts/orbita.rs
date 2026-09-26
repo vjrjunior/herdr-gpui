@@ -6,7 +6,7 @@
 use super::super::{
     ARROW_RESERVE,
     agents::agent_labels,
-    cell::{AgentRow, RowContext, RowLayout, RowState, WorkspaceRow},
+    cell::{AgentRow, Fold, RowContext, RowLayout, RowState, WorkspaceRow},
     layout::{HeaderCase, Highlight, Rounded, SidebarDensity, SidebarStyle, outline_border},
     line_height,
     row::{RowBadge, RowIcon, RowKind, RowTree},
@@ -44,10 +44,9 @@ impl RowLayout for Orbita {
             badge
         };
         let arrow = fold.map(|fold| {
-            fold.element(cx.theme)
+            chevron(fold, cx.theme)
                 .w(px(ARROW_RESERVE - density.gap()))
                 .h(px(line_height(cx.font) * lines))
-                .text_size(px(16.))
         });
         super::super::row::row(
             label,
@@ -90,6 +89,47 @@ impl RowLayout for Orbita {
             (cx.font, cx.theme),
         )
     }
+}
+
+const CHEVRON_GROUP: &str = "orbita-fold";
+const CHEVRON_SIZE: f32 = 12.;
+
+fn chevron(fold: Fold, theme: &Theme) -> Stateful<Div> {
+    let Fold {
+        id,
+        index,
+        collapsed,
+        toggle,
+    } = fold;
+    let foreground = theme.foreground;
+    div()
+        .id(id)
+        .debug_selector(move || format!("collapse-{index}"))
+        .group(CHEVRON_GROUP)
+        .flex_none()
+        .flex()
+        .items_center()
+        .justify_center()
+        .cursor_pointer()
+        .child(
+            svg()
+                .debug_selector(move || format!("chevron-{index}"))
+                .path(if collapsed {
+                    "icons/chevron-right.svg"
+                } else {
+                    "icons/chevron-down.svg"
+                })
+                .size(px(CHEVRON_SIZE))
+                .flex_none()
+                .text_color(rgb(theme.muted))
+                .group_hover(CHEVRON_GROUP, move |style| {
+                    style.text_color(rgb(foreground))
+                }),
+        )
+        .on_click(move |event, window, cx| {
+            cx.stop_propagation();
+            toggle(event, window, cx);
+        })
 }
 
 pub(in super::super) struct OrbitaRounded;

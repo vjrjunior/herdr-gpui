@@ -85,6 +85,7 @@ impl AssetSource for Icons {
             "icons/trash.svg" => include_bytes!("../../../assets/icons/trash.svg"),
             "icons/chevron-up.svg" => include_bytes!("../../../assets/icons/chevron-up.svg"),
             "icons/chevron-down.svg" => include_bytes!("../../../assets/icons/chevron-down.svg"),
+            "icons/chevron-right.svg" => include_bytes!("../../../assets/icons/chevron-right.svg"),
             "icons/git-branch.svg" => include_bytes!("../../../assets/icons/git-branch.svg"),
             "icons/github.svg" => include_bytes!("../../../assets/icons/github.svg"),
             "icons/theme.svg" => include_bytes!("../../../assets/icons/theme.svg"),
