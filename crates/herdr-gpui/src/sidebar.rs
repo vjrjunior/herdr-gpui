@@ -19,6 +19,9 @@ mod tests;
 #[cfg(any(test, feature = "integration-test"))]
 pub(crate) mod layout_tests;
 
+#[cfg(test)]
+mod orbita_tests;
+
 #[cfg(all(feature = "integration-test", target_os = "macos"))]
 pub(crate) mod native_tests;
 

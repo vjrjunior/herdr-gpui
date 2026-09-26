@@ -126,6 +126,11 @@ impl HerdrWindow {
             .child(section("FONTS"));
         for (id, label, value) in [
             ("preferences-font-sidebar", "Sidebar", &self.config.sidebar),
+            (
+                "preferences-font-sidebar-worktrees",
+                "Worktrees",
+                &self.config.sidebar_worktrees,
+            ),
             ("preferences-font-tabs", "Tabs", &self.config.tabs),
             (
                 "preferences-font-terminal",

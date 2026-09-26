@@ -34,7 +34,9 @@ option_as_alt = "auto"
 # Add "-rounded" to any of them ("normal-rounded", "compact-rounded",
 # "comfortable-rounded") for inset rows with rounded, bordered highlights.
 # "superset" (single-line rows), "orca" (cards), and "minimal" (status and name
-# only) draw rows with a design of their own. View > Layout lists them all.
+# only) draw rows with a design of their own. "orbita" is comfortable-rounded
+# with worktree tree guides, the [sidebar_worktrees] font, and plugin badges.
+# View > Layout lists them all.
 layout = "normal"
 
 [notifications]
@@ -104,6 +106,11 @@ position = "bottom-right"
 # family = "DejaVu Sans Mono"
 size = 12
 # fallback = ["Symbols Nerd Font Mono"]
+
+# Worktree rows under a repository in the "orbita" layout. Unset keys follow
+# [sidebar].
+# [sidebar_worktrees]
+# size = 11
 
 [tabs]
 # Default: "Menlo" on macOS, "DejaVu Sans Mono" on Linux.

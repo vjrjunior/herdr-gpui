@@ -49,6 +49,7 @@ pub struct Config {
     pub usage: crate::usage::UsageConfig,
     pub option_as_alt: OptionAsAlt,
     pub sidebar: FontConfig,
+    pub sidebar_worktrees: FontConfig,
     pub tabs: FontConfig,
     pub terminal: FontConfig,
     pub ui: FontConfig,
@@ -218,13 +219,17 @@ pub enum Style {
 pub enum LayoutMode {
     /// Herdr's rows: `normal`, `compact`, `comfortable`, or any of them with a
     /// `-rounded` suffix.
-    Classic { density: Density, style: Style },
+    Classic {
+        density: Density,
+        style: Style,
+    },
     /// Single-line rows with an icon slot and pull request counts.
     Superset,
     /// Rounded cards with a meta line for host, branch, and pull request.
     Orca,
     /// One line per row with only the status and the name.
     Minimal,
+    Orbita,
 }
 
 impl Default for LayoutMode {
@@ -245,10 +250,11 @@ impl LayoutMode {
         "superset",
         "orca",
         "minimal",
+        "orbita",
     ];
 
     /// Every named layout, in the order menus list them.
-    pub const ALL: [Self; 9] = [
+    pub const ALL: [Self; 10] = [
         Self::new(Density::Normal, Style::Flat),
         Self::new(Density::Compact, Style::Flat),
         Self::new(Density::Comfortable, Style::Flat),
@@ -258,6 +264,7 @@ impl LayoutMode {
         Self::Superset,
         Self::Orca,
         Self::Minimal,
+        Self::Orbita,
     ];
 
     pub const fn new(density: Density, style: Style) -> Self {
@@ -270,7 +277,7 @@ impl LayoutMode {
         match self {
             Self::Classic { density, .. } => density,
             Self::Superset | Self::Minimal => Density::Normal,
-            Self::Orca => Density::Comfortable,
+            Self::Orca | Self::Orbita => Density::Comfortable,
         }
     }
 
@@ -279,7 +286,7 @@ impl LayoutMode {
         match self {
             Self::Classic { style, .. } => style,
             Self::Superset | Self::Minimal => Style::Flat,
-            Self::Orca => Style::Rounded,
+            Self::Orca | Self::Orbita => Style::Rounded,
         }
     }
 
@@ -297,6 +304,7 @@ impl LayoutMode {
             Self::Superset => "superset",
             Self::Orca => "orca",
             Self::Minimal => "minimal",
+            Self::Orbita => "orbita",
         }
     }
 
@@ -314,6 +322,7 @@ impl LayoutMode {
             Self::Superset => "Superset",
             Self::Orca => "Orca",
             Self::Minimal => "Minimal",
+            Self::Orbita => "Orbita",
         }
     }
 }
@@ -530,7 +539,7 @@ const SYMBOL_FAMILY_MARKER: &str = "nerd font";
 /// detection keeps only the best-ranked few families.
 const MAX_DETECTED_FALLBACKS: usize = 3;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct FontConfig {
     pub family: String,
     pub size: f32,
@@ -541,6 +550,32 @@ pub struct FontConfig {
 }
 
 impl FontConfig {
+    fn apply(&mut self, name: &'static str, settings: FontSettings) -> Result<()> {
+        if let Some(family) = settings.family {
+            self.family = family;
+        }
+        if let Some(size) = settings.size {
+            self.size = size;
+        }
+        if let Some(fallback) = settings.fallback {
+            if fallback.len() > MAX_FONT_FALLBACKS {
+                return Err(Error::TooManyFontFallbacks(name));
+            }
+            if fallback.iter().any(|family| family.trim().is_empty()) {
+                return Err(Error::EmptyFontFallback(name));
+            }
+            self.fallbacks = Some(fallback);
+        }
+        if self.family.trim().is_empty() {
+            return Err(Error::EmptyFontFamily(name));
+        }
+        if !self.size.is_finite() || !FONT_SIZE_RANGE.contains(&self.size) {
+            return Err(Error::InvalidFontSize(name));
+        }
+
+        Ok(())
+    }
+
     pub fn line_height(&self) -> f32 {
         self.size * 20.0 / 14.0
     }
@@ -616,6 +651,7 @@ impl Default for Config {
             theme_overrides: ThemeOverrides::default(),
             keybindings: Keymap::default(),
             sidebar: font(monospace, 12.0),
+            sidebar_worktrees: font(monospace, 12.0),
             // Tabs are terminal chrome, so they read in the monospace face the
             // sidebar and terminal use, as they do in the reference UI.
             tabs: font(monospace, 12.0),
@@ -634,6 +670,7 @@ struct Settings {
     usage: crate::usage::UsageConfig,
     option_as_alt: OptionAsAlt,
     sidebar: FontSettings,
+    sidebar_worktrees: FontSettings,
     tabs: FontSettings,
     terminal: FontSettings,
     ui: FontSettings,
@@ -805,6 +842,7 @@ impl Config {
     {
         let faces = [
             &mut self.sidebar,
+            &mut self.sidebar_worktrees,
             &mut self.tabs,
             &mut self.terminal,
             &mut self.ui,
@@ -996,28 +1034,12 @@ impl Config {
             ("terminal", &mut config.terminal, settings.terminal),
             ("ui", &mut config.ui, settings.ui),
         ] {
-            if let Some(family) = settings.family {
-                font.family = family;
-            }
-            if let Some(size) = settings.size {
-                font.size = size;
-            }
-            if let Some(fallback) = settings.fallback {
-                if fallback.len() > MAX_FONT_FALLBACKS {
-                    return Err(Error::TooManyFontFallbacks(name));
-                }
-                if fallback.iter().any(|family| family.trim().is_empty()) {
-                    return Err(Error::EmptyFontFallback(name));
-                }
-                font.fallbacks = Some(fallback);
-            }
-            if font.family.trim().is_empty() {
-                return Err(Error::EmptyFontFamily(name));
-            }
-            if !font.size.is_finite() || !FONT_SIZE_RANGE.contains(&font.size) {
-                return Err(Error::InvalidFontSize(name));
-            }
+            font.apply(name, settings)?;
         }
+        config.sidebar_worktrees = config.sidebar.clone();
+        config
+            .sidebar_worktrees
+            .apply("sidebar_worktrees", settings.sidebar_worktrees)?;
         Ok(config)
     }
 
@@ -2835,6 +2857,32 @@ mod tests {
             Some(detected.as_slice())
         );
         assert_eq!(config.tabs.fallbacks.as_deref(), Some(detected.as_slice()));
+        Ok(())
+    }
+
+    #[test]
+    fn sidebar_worktrees_inherit_the_sidebar_font_and_override_by_key() -> anyhow::Result<()> {
+        let config =
+            Config::parse("[sidebar]\nfamily = \"JetBrains Mono\"\nsize = 14\nfallback = []\n")?;
+        assert_eq!(config.sidebar_worktrees, config.sidebar);
+        let config = Config::parse(
+            "[sidebar]\nfamily = \"JetBrains Mono\"\nsize = 14\n[sidebar_worktrees]\nsize = 12\n",
+        )?;
+        assert_eq!(config.sidebar_worktrees.family, "JetBrains Mono");
+        assert_eq!(config.sidebar_worktrees.size, 12.);
+        assert_eq!(config.sidebar.size, 14.);
+        for text in [
+            "[sidebar_worktrees]\nsize = 4",
+            "[sidebar_worktrees]\nfamily = \" \"",
+            "[sidebar_worktrees]\nfallback = [\"\"]",
+            "[sidebar_worktrees]\nunknown = 1",
+        ] {
+            assert!(Config::parse(text).is_err(), "accepted {text}");
+        }
+        assert!(matches!(
+            Config::parse("[sidebar_worktrees]\nsize = 4"),
+            Err(Error::InvalidFontSize("sidebar_worktrees"))
+        ));
         Ok(())
     }
 

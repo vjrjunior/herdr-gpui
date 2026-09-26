@@ -298,6 +298,13 @@ spacing:
   differs from the name, and the pull request. Agents are single compact lines.
 - `minimal`: one line per row with only the status dot and the name, for narrow
   sidebars or long lists.
+- `orbita`: `comfortable-rounded` with tree guides tying worktrees to their
+  repository, each child's highlight starting where its guide's tick ends, the
+  `[sidebar_worktrees]` font on worktree rows, and a line of badges for values
+  Herdr plugins report through workspace metadata
+  (`herdr workspace report-metadata --token NAME=VALUE`), in the order the
+  daemon sends them. A leading `✓`, `✗`, or `●` colors a badge green, red, or
+  yellow, and a reported `pr` token replaces the native pull request number.
 
 New installs start with `comfortable-rounded`: the first launch writes it into
 the new `config-gpui.local.toml`. Existing override files and migrated personal
@@ -362,6 +369,8 @@ built-ins or Ghostty files into a `Theme` with packed 24-bit RGB colors and all
 256 palette entries. Theme resolution is a separate fallible step from loading
 and validating TOML. Font sections can override either family or size without
 repeating the other field. `FontConfig::line_height()` returns `size * 20 / 14`.
+`[sidebar_worktrees]` sets the font of worktree rows in the `orbita` layout; any
+key it leaves unset follows `[sidebar]`.
 The `[features]` table holds opt-in behaviors as `Features`, with every flag off
 by default and unknown keys rejected like the other sections; Preferences lists
 each flag and its state read-only, since only the config file turns one on.

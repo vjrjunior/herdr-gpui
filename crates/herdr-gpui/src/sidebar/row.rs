@@ -11,7 +11,10 @@ use super::{
     layout::{SidebarDensity, SidebarLook},
     line_height, segment_budgets, status_indicator,
 };
-use crate::config::{FontConfig, Theme};
+use crate::{
+    config::{FontConfig, Theme},
+    fonts::StyledFont,
+};
 use gpui::{prelude::*, *};
 use herdr_client::protocol::AgentStatus;
 use std::sync::Arc;
@@ -141,6 +144,12 @@ pub(super) fn tree_lines(
 pub(super) struct RowBadge {
     pub(super) pr: Option<PrBadge>,
     pub(super) dirty: bool,
+}
+
+impl RowBadge {
+    pub(super) fn without_pr(self) -> Option<Self> {
+        Self::new(None, self.dirty)
+    }
 }
 
 impl RowBadge {
@@ -302,13 +311,13 @@ pub(super) fn row(
     workspace_icon: RowIcon,
     arrow: Option<Stateful<Div>>,
     badge: Option<RowBadge>,
+    tokens: &[(String, String)],
     look: SidebarLook,
     appearance: (&FontConfig, &Theme),
 ) -> Div {
     let (font, theme) = appearance;
     let focused = state.selected;
     let layout = look.density;
-    let padding = layout.padding();
     let content_x = look.content_x();
     let gap = layout.gap();
     let vertical_padding = look.row_padding();
@@ -330,7 +339,7 @@ pub(super) fn row(
     let indent = if tree == RowTree::None {
         0.
     } else {
-        layout.child_indent()
+        look.child_indent()
     };
     let arrow_reserve = if reserve_arrow { ARROW_RESERVE } else { 0. };
     let arrow_absent = arrow.is_none();
@@ -358,15 +367,20 @@ pub(super) fn row(
     let agent_size = line_height(font).min(12.);
     let agent_reserve = agent_size + 4.;
     let name_reserve = icon_reserve + agent_first.map_or(0., |_| agent_reserve);
+    let lines = [true, show_detail, !tokens.is_empty()]
+        .into_iter()
+        .filter(|&shown| shown)
+        .count() as f32;
     div()
         .debug_selector(|| format!("row-{key}"))
-        .h(px(look.row_height(
-            line_height(font) * if show_detail { 2. } else { 1. },
-        )))
+        .h(px(look.row_height(line_height(font) * lines)))
         .w_full()
         .min_w_0()
         .flex_none()
         .relative()
+        .text_font(font)
+        .text_size(px(font.size))
+        .line_height(px(line_height(font)))
         .pl(px(content_x + indent))
         .pr(px(content_x))
         .flex()
@@ -374,11 +388,11 @@ pub(super) fn row(
         .gap(px(gap))
         .py(px(content_top))
         .cursor_pointer()
-        .map(|row| look.mark(row, key, state, theme))
+        .map(|row| look.mark(row, key, state, indent, theme))
         // Tree lines run in the indent the row already reserves, so a child is
         // tied to its parent without box-drawing glyphs in the label.
         .when(tree != RowTree::None && look.style.tree_lines(), |row| {
-            let (color, font) = (theme.muted, font.clone());
+            let (color, font) = (look.tree_color(theme), font.clone());
             let gutter = look.tree_gutter();
             row.child(
                 div()
@@ -386,7 +400,7 @@ pub(super) fn row(
                     .absolute()
                     // Between the parent's label column and this row's own dot.
                     .left(px(gutter))
-                    .w(px(padding + indent - layout.tree_gutter()))
+                    .w(px(look.tree_tick_end(indent) - gutter))
                     .top_0()
                     .bottom_0()
                     .child(
@@ -400,7 +414,7 @@ pub(super) fn row(
                                     content_top,
                                     window.scale_factor(),
                                 ) {
-                                    window.paint_quad(fill(line, rgb(color)));
+                                    window.paint_quad(fill(line, color));
                                 }
                             },
                         )
@@ -480,6 +494,9 @@ pub(super) fn row(
                                     .child(label_text(detail)),
                             ),
                     )
+                })
+                .when(!tokens.is_empty(), |column| {
+                    column.child(token_line(key, tokens, label_width, font, theme))
                 }),
         )
         // The collapse column comes first so the badge can hug the row's edge;
@@ -559,6 +576,48 @@ pub(super) fn row(
                     }),
             )
         })
+}
+
+fn token_line(
+    key: &str,
+    tokens: &[(String, String)],
+    width: f32,
+    font: &FontConfig,
+    theme: &Theme,
+) -> Div {
+    let height = line_height(font);
+    div()
+        .debug_selector(|| format!("tokens-{key}"))
+        .w(px(width))
+        .h(px(height))
+        .flex()
+        .items_center()
+        .gap(px(4.))
+        .overflow_hidden()
+        .children(tokens.iter().map(|(name, value)| {
+            div()
+                .debug_selector(|| format!("token-{key}-{name}"))
+                .flex_none()
+                .h(px((height - 2.).max(0.)))
+                .px(px(4.))
+                .flex()
+                .items_center()
+                .rounded(px(crate::config::corners::SMALL))
+                .border_1()
+                .border_color(rgb(theme.active))
+                .text_size(px(font.size * 0.85))
+                .text_color(rgb(token_color(value, theme)))
+                .child(label_text(value))
+        }))
+}
+
+pub(super) fn token_color(value: &str, theme: &Theme) -> u32 {
+    match value.chars().next() {
+        Some('\u{2713}') => theme.palette[2],
+        Some('\u{2717}') => theme.palette[1],
+        Some('\u{25cf}') => theme.palette[3],
+        _ => theme.subtext(),
+    }
 }
 
 fn agent_mark(

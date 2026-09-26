@@ -337,6 +337,7 @@ fn cells_hand_their_state_and_data_to_the_layout() {
     let (font, theme) = (crate::config::Config::default().sidebar, Theme::default());
     let cx = RowContext {
         font: &font,
+        worktree_font: &font,
         theme: &theme,
         look: for_mode(Default::default()),
         width: 232.,
