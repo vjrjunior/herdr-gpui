@@ -531,11 +531,12 @@ pub(super) fn row(
                                 line.child(
                                     // Well under the line height, so marks on
                                     // neighbouring rows keep a visible gap.
-                                    crate::icons::uncommitted(
-                                        theme,
-                                        (line_height(font) * 0.75).round().min(15.),
-                                    )
-                                    .debug_selector(|| format!("dirty-{key}")),
+                                    look.style
+                                        .uncommitted(
+                                            theme,
+                                            (line_height(font) * 0.75).round().min(15.),
+                                        )
+                                        .debug_selector(|| format!("dirty-{key}")),
                                 )
                             })
                             .when_some(pr.as_ref(), |line, badge| {

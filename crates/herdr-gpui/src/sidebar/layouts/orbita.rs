@@ -93,6 +93,7 @@ impl RowLayout for Orbita {
 
 const CHEVRON_GROUP: &str = "orbita-fold";
 const CHEVRON_SIZE: f32 = 12.;
+const DIRTY_DOT: f32 = 8.;
 
 fn chevron(fold: Fold, theme: &Theme) -> Stateful<Div> {
     let Fold {
@@ -158,6 +159,21 @@ impl SidebarStyle for OrbitaRounded {
     }
     fn tree_color(&self, theme: &Theme) -> Rgba {
         outline_border(theme)
+    }
+    fn uncommitted(&self, theme: &Theme, size: f32) -> Div {
+        div()
+            .size(px(size))
+            .flex_none()
+            .flex()
+            .items_center()
+            .justify_center()
+            .child(
+                div()
+                    .debug_selector(|| "dirty-dot".into())
+                    .size(px(DIRTY_DOT))
+                    .rounded_full()
+                    .bg(rgb(theme.palette[3])),
+            )
     }
     fn header_case(&self) -> HeaderCase {
         Rounded.header_case()
