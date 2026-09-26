@@ -319,6 +319,7 @@ pub(super) async fn sidebar_hosts(
                     .map_err(|_| anyhow!("unexpected root"))?;
                 entity.update(cx, |view, _| -> Result<()> {
                     view.config.sidebar.size = font_size;
+                    view.config.sidebar_worktrees.size = font_size;
                     view.config.theme = if font_size == 12. { "Default" } else { "Nord" }.into();
                     view.theme = view.config.theme(false)?;
                     Ok(())

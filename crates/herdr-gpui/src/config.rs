@@ -36,6 +36,7 @@ mod notifications;
 mod omarchy;
 mod opensandbox;
 mod option_as_alt;
+mod orbita;
 mod padding;
 pub(crate) mod preferences;
 pub(crate) use herdr_remote_control::app::config as remote;
@@ -284,6 +285,7 @@ pub struct Config {
     pub sidebar_layout: SidebarLayout,
     /// Spacing overrides, host colours, and selection marking for the sidebar.
     pub sidebar_style: SidebarStyle,
+    pub sidebar_worktrees: FontConfig,
     /// Wheel scrollback draws panes between rows, following the OS deltas.
     pub smooth_scroll: bool,
     /// How loud agent notification sounds play.
@@ -462,6 +464,7 @@ impl Default for Config {
             sidebar: font(monospace, 12.0),
             sidebar_layout: SidebarLayout::default(),
             sidebar_style: SidebarStyle::default(),
+            sidebar_worktrees: font(monospace, 12.0),
             smooth_scroll: true,
             sound: SoundConfig::default(),
             sprites: SpritesConfig::default(),
@@ -545,6 +548,7 @@ struct Settings {
     show_system_load: Option<bool>,
     show_window_controls: Option<bool>,
     sidebar: sidebar_style::SidebarSettings,
+    sidebar_worktrees: FontSettings,
     smooth_scroll: Option<bool>,
     sound: SoundConfig,
     sprites: SpritesConfig,
@@ -781,6 +785,7 @@ impl Config {
                 ("sidebar", &mut settings.sidebar.font),
                 ("tabs", &mut settings.tabs),
                 ("ui", &mut settings.ui),
+                ("sidebar_worktrees", &mut settings.sidebar_worktrees),
             ]
             .into_iter()
             .flat_map(|(name, face)| face.reject_terminal_keys(name)),
@@ -944,6 +949,7 @@ impl Config {
         ] {
             settings.apply(name, font)?;
         }
+        config.sidebar_worktrees = settings.sidebar_worktrees.worktree_font(&config.sidebar)?;
         Ok(config)
     }
 }

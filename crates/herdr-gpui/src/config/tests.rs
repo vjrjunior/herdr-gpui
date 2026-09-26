@@ -49,6 +49,7 @@ mod sidebar_scope;
 mod sidebar_search;
 mod sidebar_settings;
 mod sidebar_style;
+mod sidebar_worktrees;
 mod sound_volume;
 mod ssh_hosts;
 mod status_bar;

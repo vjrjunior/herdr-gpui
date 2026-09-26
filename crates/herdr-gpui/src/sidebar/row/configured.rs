@@ -325,6 +325,7 @@ mod tests {
                 &theme,
             ),
             font: &font,
+            worktree_font: &font,
             theme: &theme,
             look: layout::for_mode(LayoutMode::default()),
             width: 232.,

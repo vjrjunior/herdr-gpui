@@ -95,6 +95,7 @@ pub(in crate::settings_window) fn face_font(config: &Config, face: FontFace) -> 
     match face {
         FontFace::Terminal => &config.terminal,
         FontFace::Sidebar => &config.sidebar,
+        FontFace::SidebarWorktrees => &config.sidebar_worktrees,
         FontFace::Tabs => &config.tabs,
         FontFace::Ui => &config.ui,
     }
@@ -116,6 +117,7 @@ pub(in crate::settings_window) const fn face_message(face: FontFace) -> &'static
     match face {
         FontFace::Terminal => "settings-fonts-terminal",
         FontFace::Sidebar => "settings-fonts-sidebar",
+        FontFace::SidebarWorktrees => "orbita-fonts-worktrees",
         FontFace::Tabs => "settings-fonts-tabs",
         FontFace::Ui => "settings-fonts-ui",
     }
@@ -126,7 +128,7 @@ pub(in crate::settings_window) const fn face_message(face: FontFace) -> &'static
 pub(in crate::settings_window) const fn sample_messages(face: FontFace) -> &'static [&'static str] {
     match face {
         FontFace::Terminal => &[],
-        FontFace::Sidebar => &[
+        FontFace::Sidebar | FontFace::SidebarWorktrees => &[
             "settings-fonts-sample-sidebar-1",
             "settings-fonts-sample-sidebar-2",
             "settings-fonts-sample-sidebar-3",

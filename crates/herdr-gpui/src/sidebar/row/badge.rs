@@ -27,6 +27,18 @@ pub(in crate::sidebar) struct RowBadge {
 }
 
 impl RowBadge {
+    pub(in crate::sidebar) fn without_pr(self) -> Option<Self> {
+        let counts = self.counts.filter(|counts| counts.local);
+        Self::new(
+            None,
+            counts,
+            self.dirty,
+            self.teleported,
+            self.noted,
+            self.muted,
+        )
+    }
+
     /// Whether it says anything about the checkout, beyond the workspace's
     /// mute, which card layouts put on the name's line instead.
     pub(in crate::sidebar) fn checkout_marks(&self) -> bool {

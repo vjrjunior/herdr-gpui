@@ -17,6 +17,7 @@ pub(in crate::settings_window) const fn size_control(face: FontFace) -> &'static
     match face {
         FontFace::Terminal => "fonts-terminal-size-control",
         FontFace::Sidebar => "fonts-sidebar-size-control",
+        FontFace::SidebarWorktrees => "fonts-sidebar-worktrees-size-control",
         FontFace::Tabs => "fonts-tabs-size-control",
         FontFace::Ui => "fonts-ui-size-control",
     }
@@ -26,6 +27,7 @@ fn specimen_title(face: FontFace) -> String {
     match face {
         FontFace::Terminal => fl!("settings-fonts-specimen-terminal"),
         FontFace::Sidebar => fl!("settings-fonts-specimen-sidebar"),
+        FontFace::SidebarWorktrees => fl!("orbita-fonts-specimen-worktrees"),
         FontFace::Tabs => fl!("settings-fonts-specimen-tabs"),
         FontFace::Ui => fl!("settings-fonts-specimen-ui"),
     }

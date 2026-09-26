@@ -1409,6 +1409,16 @@ spacing:
   differs from the name, and the pull request. Agents are single compact lines.
 - `minimal`: one line per row with only the status dot and the name, for narrow
   sidebars or long lists.
+- `orbita`: `comfortable-rounded` with tree guides tying worktrees to their
+  repository, each child's highlight stepped in under its guide's tick, the
+  `[sidebar_worktrees]` font on worktree rows, and a line of badges for values
+  Herdr plugins report through workspace metadata
+  (`herdr workspace report-metadata --token NAME=VALUE`), in the order the
+  daemon sends them. A leading `✓`, `✗`, or `●` colors a badge green, red, or
+  yellow, and a reported `pr` token replaces the native pull request number.
+  Rows configured through `[ui.sidebar.spaces]` place those values with `$name`
+  tokens instead, so the badge line shows only on native rows: with no
+  configured rows, or with `[usage] inline = false`.
 
 The `devices` layout lists agents by device instead of workspaces. Every
 device gets a header, even when there is only one, with its connection dot
@@ -1522,6 +1532,8 @@ repeating the other field. `FontConfig::line_height()` returns `size * 20 / 14` 
 weight name or 100 to 900; bold cells draw `bold_font_weight` of it, 300
 heavier and at least bold. On macOS, font resolution reports a weight the
 family has no face for; other platforms do not check.
+`[sidebar_worktrees]` sets the font of worktree rows in the `orbita` layout; any
+key it leaves unset follows `[sidebar]`.
 The `[features]` table holds opt-in behaviors as `Features`, with every flag off
 by default and unknown keys rejected like the other sections; Preferences lists
 each flag and its state read-only, since only the config file turns one on.
