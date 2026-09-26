@@ -137,6 +137,33 @@ pub(super) fn teleported(theme: &crate::config::Theme, size: f32) -> gpui::Div {
         )
 }
 
+const BRANCH_HEAD_NODE: gpui::Point<f32> = gpui::Point {
+    x: 17. / 24.,
+    y: 5.5 / 24.,
+};
+
+pub(super) fn branch(size: f32, color: u32) -> gpui::Div {
+    use gpui::{div, prelude::*, px, rgb, svg};
+    div().relative().size(px(size)).flex_none().child(
+        svg()
+            .path("icons/git-branch.svg")
+            .size(px(size))
+            .text_color(rgb(color)),
+    )
+}
+
+pub(super) fn branch_dot(theme: &crate::config::Theme, icon: f32) -> gpui::Div {
+    use gpui::{div, prelude::*, px, rgb};
+    let size = (icon * 3. / 7.).round();
+    div()
+        .absolute()
+        .left(px(icon * BRANCH_HEAD_NODE.x - size / 2.))
+        .top(px(icon * BRANCH_HEAD_NODE.y - size / 2.))
+        .size(px(size))
+        .rounded_full()
+        .bg(rgb(theme.palette[3]))
+}
+
 impl AssetSource for Icons {
     fn load(&self, path: &str) -> gpui::Result<Option<Cow<'static, [u8]>>> {
         if let Some(icon) = AgentIcon::ALL.iter().find(|icon| icon.path() == path) {
