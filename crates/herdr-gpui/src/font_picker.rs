@@ -26,8 +26,15 @@ impl FontTarget {
 
 pub(crate) fn shared_family(config: &Config) -> Option<&str> {
     let family = config.sidebar.family.as_str();
-    (config.tabs.family == family && config.terminal.family == family && config.ui.family == family)
-        .then_some(family)
+    [
+        &config.sidebar_worktrees,
+        &config.tabs,
+        &config.terminal,
+        &config.ui,
+    ]
+    .iter()
+    .all(|font| font.family == family)
+    .then_some(family)
 }
 
 fn font_names(names: impl IntoIterator<Item = String>) -> Vec<String> {
@@ -133,6 +140,9 @@ impl HerdrWindow {
                         FontTarget::All => shared_family(&this.config),
                         FontTarget::Face(FontFace::Sidebar) => {
                             Some(this.config.sidebar.family.as_str())
+                        }
+                        FontTarget::Face(FontFace::SidebarWorktrees) => {
+                            Some(this.config.sidebar_worktrees.family.as_str())
                         }
                         FontTarget::Face(FontFace::Tabs) => Some(this.config.tabs.family.as_str()),
                         FontTarget::Face(FontFace::Terminal) => {
@@ -328,7 +338,7 @@ mod tests {
     }
 
     #[test]
-    fn all_fonts_shows_mixed_until_all_four_match() {
+    fn all_fonts_shows_mixed_until_every_face_matches() {
         let mut config = Config::default();
         assert_eq!(shared_family(&config), None);
         config.ui.family = config.sidebar.family.clone();
@@ -337,6 +347,7 @@ mod tests {
         assert_eq!(shared_family(&config), None);
         for font in [
             &mut config.sidebar,
+            &mut config.sidebar_worktrees,
             &mut config.tabs,
             &mut config.terminal,
             &mut config.ui,
@@ -344,6 +355,8 @@ mod tests {
             font.family = "Shared".into();
         }
         assert_eq!(shared_family(&config), Some("Shared"));
+        config.sidebar_worktrees.family = "Different".into();
+        assert_eq!(shared_family(&config), None);
     }
 
     #[test]

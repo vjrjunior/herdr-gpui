@@ -5,7 +5,8 @@
 use super::{CHILD_INDENT, LABEL_GAP, ROW_PADDING, STATUS_WIDTH, cell::RowState, row::RowLift};
 use crate::config::{Density, LayoutMode, Style, Theme};
 use gpui::{
-    Div, InteractiveElement, ParentElement, Styled, div, prelude::FluentBuilder, px, rgb, rgba,
+    Div, InteractiveElement, ParentElement, Rgba, Styled, div, prelude::FluentBuilder, px, rgb,
+    rgba,
 };
 
 pub(super) trait SidebarDensity {
@@ -153,6 +154,12 @@ pub(super) trait SidebarStyle {
     fn radius(&self) -> f32;
     fn highlight(&self) -> Highlight;
     fn tree_lines(&self) -> bool;
+    fn nests_children(&self) -> bool {
+        false
+    }
+    fn tree_color(&self, theme: &Theme) -> Rgba {
+        rgb(theme.muted)
+    }
     fn header_case(&self) -> HeaderCase;
 }
 
@@ -271,6 +278,27 @@ impl SidebarLook {
         self.inset() + self.density.tree_gutter()
     }
 
+    pub(super) fn tree_color(&self, theme: &Theme) -> Rgba {
+        self.style.tree_color(theme)
+    }
+
+    pub(super) fn child_indent(&self) -> f32 {
+        let tick = if self.style.nests_children() {
+            self.density.gap()
+        } else {
+            0.
+        };
+        self.density.child_indent() + tick
+    }
+
+    pub(super) fn tree_tick_end(&self, indent: f32) -> f32 {
+        if self.style.nests_children() {
+            self.inset() + indent
+        } else {
+            self.content_x() + indent
+        }
+    }
+
     pub(super) fn header_label(&self, label: &'static str) -> String {
         match self.style.header_case() {
             HeaderCase::Lower => label.to_owned(),
@@ -292,18 +320,23 @@ impl SidebarLook {
     /// absolutely positioned, so a border or radius never changes the row's
     /// measured geometry, and it must be the row's first child so content
     /// paints above it.
-    pub(super) fn highlight(&self, key: &str, state: RowState, theme: &Theme) -> Div {
+    pub(super) fn highlight(&self, key: &str, state: RowState, indent: f32, theme: &Theme) -> Div {
         let RowState {
             selected: focused,
             highlighted,
             ..
         } = state;
+        let nested = if self.style.nests_children() {
+            indent
+        } else {
+            0.
+        };
         let inset = px(self.inset());
         let edge = px(self.spacing() / 2.);
         let layer = div()
             .debug_selector(|| format!("highlight-{key}"))
             .absolute()
-            .left(inset)
+            .left(inset + px(nested))
             .right(inset)
             .top(edge)
             .bottom(edge)
@@ -318,7 +351,7 @@ impl SidebarLook {
             }
             Highlight::Outline => {
                 let wash = |alpha: u32| rgba((theme.foreground << 8) | alpha);
-                let (hover, selected, border) = (wash(0x0d), wash(0x14), wash(0x40));
+                let (hover, selected, border) = (wash(0x0d), wash(0x14), outline_border(theme));
                 layer
                     .border_1()
                     .border_color(rgba(0))
@@ -335,12 +368,19 @@ impl SidebarLook {
 impl SidebarLook {
     /// A row's state layer and hover wiring together: the lifted card while
     /// it is carried, and no hover while a carried row passes over it.
-    pub(super) fn mark(&self, row: Div, key: &str, state: RowState, theme: &Theme) -> Div {
+    pub(super) fn mark(
+        &self,
+        row: Div,
+        key: &str,
+        state: RowState,
+        indent: f32,
+        theme: &Theme,
+    ) -> Div {
         match state.lift {
             RowLift::Resting => self
                 .hover_group(row)
-                .child(self.highlight(key, state, theme)),
-            RowLift::Passed => row.child(self.highlight(key, state, theme)),
+                .child(self.highlight(key, state, indent, theme)),
+            RowLift::Passed => row.child(self.highlight(key, state, indent, theme)),
             RowLift::Lifted => row.child(self.lifted(key, state.selected, theme)),
         }
     }
@@ -378,6 +418,10 @@ const LIFT_INSET: f32 = 6.;
 /// The least rounding a lifted card gets, even from square rows.
 const LIFT_RADIUS: f32 = 4.;
 
+pub(super) fn outline_border(theme: &Theme) -> Rgba {
+    rgba((theme.foreground << 8) | 0x40)
+}
+
 pub(super) fn for_mode(mode: LayoutMode) -> SidebarLook {
     SidebarLook {
         density: match mode.density() {
@@ -386,6 +430,7 @@ pub(super) fn for_mode(mode: LayoutMode) -> SidebarLook {
             Density::Comfortable => &Comfortable,
         },
         style: match mode.style() {
+            _ if mode == LayoutMode::Orbita => &super::layouts::OrbitaRounded,
             Style::Flat => &Flat,
             Style::Rounded => &Rounded,
         },

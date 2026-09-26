@@ -29,7 +29,7 @@ fn shell(key: &str, state: RowState, indent: f32, line: Line<'_>, cx: &RowContex
         .flex()
         .items_center()
         .cursor_pointer()
-        .map(|row| look.mark(row, key, state, cx.theme))
+        .map(|row| look.mark(row, key, state, 0., cx.theme))
         .child(line.into_div())
 }
 

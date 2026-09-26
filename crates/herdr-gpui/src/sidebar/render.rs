@@ -43,6 +43,7 @@ impl HerdrWindow {
             (look.content_width(width) - HOST_ARROW_WIDTH - 2. * HOST_GAP - STATUS_WIDTH).max(0.);
         let view = cx.entity().downgrade();
         let font = &self.config.sidebar;
+        let worktree_font = &self.config.sidebar_worktrees;
         let theme = &self.theme;
         let mut spaces = div()
             .id("spaces-scroll")
@@ -113,6 +114,7 @@ impl HerdrWindow {
                                 selected,
                                 ..RowState::default()
                             },
+                            0.,
                             theme,
                         ))
                         .text_color(rgb(if endpoint.enabled {
@@ -188,6 +190,7 @@ impl HerdrWindow {
             let row_cx = RowContext {
                 indicators,
                 font,
+                worktree_font,
                 theme,
                 look,
                 width,
