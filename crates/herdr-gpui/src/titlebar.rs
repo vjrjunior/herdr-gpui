@@ -24,6 +24,8 @@ const SIDEBAR_GLYPH_WIDTH: f32 = 18.;
 /// Empty room between the toggle's edge and the glyph drawn inside it.
 const SIDEBAR_TOGGLE_INSET: f32 = (SIDEBAR_TOGGLE_SIZE - SIDEBAR_GLYPH_WIDTH) / 2.;
 
+const BRANCH_ICON: f32 = 14.;
+
 /// Native chrome the window draws above its body; popups must clear it.
 pub(super) const HEIGHT: f32 = 34.;
 
@@ -63,6 +65,8 @@ impl HerdrWindow {
         let status = self.git.status();
         let running = self.git.running().is_some();
         let anchor = self.git_anchor.clone();
+        let dirty = status.is_some_and(|status| status.dirty());
+        let branch_dot = self.config.layout.mode == crate::config::LayoutMode::Orbita;
         let pr = self.git_pull_request().map(|pr| {
             (
                 format!("#{}", pr.number),
@@ -142,7 +146,7 @@ impl HerdrWindow {
                         )
                         // The pull request's churn is history; the badge
                         // says work is still sitting in the checkout.
-                        .when(status.is_some_and(|status| status.dirty()), |button| {
+                        .when(dirty && !branch_dot, |button| {
                             button.child(
                                 crate::icons::uncommitted(theme, 18.)
                                     .debug_selector(|| "titlebar-git-dirty".into()),
@@ -168,10 +172,12 @@ impl HerdrWindow {
                                             .child(format!("-{}", status.deletions)),
                                     )
                                 })
-                                .child(
-                                    crate::icons::uncommitted(theme, 18.)
-                                        .debug_selector(|| "titlebar-git-dirty".into()),
-                                )
+                                .when(!branch_dot, |button| {
+                                    button.child(
+                                        crate::icons::uncommitted(theme, 18.)
+                                            .debug_selector(|| "titlebar-git-dirty".into()),
+                                    )
+                                })
                         },
                     ),
                 })
@@ -191,15 +197,20 @@ impl HerdrWindow {
                             button.bg(background.blend(rgba((theme.foreground << 8) | 0x14)))
                         })
                         .child(
-                            svg()
-                                .path("icons/git-branch.svg")
-                                .size(px(14.))
-                                .flex_none()
-                                .text_color(rgb(if running {
+                            crate::icons::branch(
+                                BRANCH_ICON,
+                                if running {
                                     theme.ink(theme.palette[3])
                                 } else {
                                     theme.muted
-                                })),
+                                },
+                            )
+                            .when(dirty && branch_dot, |icon| {
+                                icon.child(
+                                    crate::icons::branch_dot(theme, BRANCH_ICON)
+                                        .debug_selector(|| "titlebar-git-dirty-dot".into()),
+                                )
+                            }),
                         )
                         .child(
                             svg()
@@ -707,6 +718,9 @@ mod tests {
 mod git_button_tests;
 #[cfg(test)]
 mod git_command_tests;
+
+#[cfg(test)]
+mod orbita_git_button_tests;
 
 #[cfg(all(test, target_os = "macos"))]
 #[allow(clippy::unwrap_used)]
