@@ -57,6 +57,7 @@ impl RowLayout for Herdr {
             upstream,
             None,
             &lines,
+            &[],
             cx,
         )
     }
@@ -85,6 +86,7 @@ impl RowLayout for Herdr {
             None,
             agent.status_text.as_deref(),
             &agent.lines,
+            &[],
             cx,
         )
     }

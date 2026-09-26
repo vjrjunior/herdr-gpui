@@ -9,6 +9,7 @@ fn font_family_saves_and_reset_preserve_other_overrides() -> anyhow::Result<()> 
     fs::write(&path, original)?;
     for face in [
         FontFace::Sidebar,
+        FontFace::SidebarWorktrees,
         FontFace::Tabs,
         FontFace::Terminal,
         FontFace::Ui,
@@ -47,6 +48,7 @@ fn all_font_families_save_and_reset_in_one_document() -> anyhow::Result<()> {
     )?;
     let faces = [
         FontFace::Sidebar,
+        FontFace::SidebarWorktrees,
         FontFace::Tabs,
         FontFace::Terminal,
         FontFace::Ui,

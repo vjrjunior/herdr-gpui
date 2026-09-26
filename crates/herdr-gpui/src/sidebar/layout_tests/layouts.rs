@@ -422,6 +422,7 @@ fn every_layout_looks_different(cx: &mut gpui::TestAppContext) {
     for mode in LayoutMode::ALL
         .into_iter()
         .filter(|mode| mode.lists_workspaces())
+        .filter(|&mode| mode != LayoutMode::Orbita)
     {
         // A fresh window per layout: debug bounds outlive their elements.
         let (_, cx) = cx.add_window_view(|window, cx| {

@@ -11,7 +11,10 @@ use super::{
     glyph_width, line_height, segment_budgets,
     tokens::ResolvedToken,
 };
-use crate::config::{FontConfig, Theme};
+use crate::{
+    config::{FontConfig, Theme},
+    fonts::StyledFont,
+};
 use gpui::{prelude::*, *};
 use herdr_client::protocol::AgentStatus;
 use std::sync::Arc;
@@ -217,7 +220,7 @@ pub(super) fn tree_gutter(cx: &RowContext<'_>) -> (f32, f32) {
 /// (`x` and width, in the row's own coordinates) and a tick across it at
 /// `elbow`, ending where the row's leading mark begins. A last child's
 /// trunk stops at its tick. Every layout draws its guides with this, in the
-/// tree's muted colour and one device pixel's weight, so they read as one
+/// look's tree colour and one device pixel's weight, so they read as one
 /// family. None for a parent, while the look draws no guides, or when the
 /// gutter has no room. Absolute: the row must be relative.
 pub(super) fn guide(
@@ -230,7 +233,7 @@ pub(super) fn guide(
     if tree == RowTree::None || !cx.look.density.tree_lines || width <= 0. {
         return None;
     }
-    let color = cx.theme.muted;
+    let color = cx.look.tree_color(cx.theme);
     let key = key.to_owned();
     Some(
         div()
@@ -249,7 +252,7 @@ pub(super) fn guide(
                             Elbow::Middle => bounds.center().y,
                         };
                         for line in tree_lines(bounds, tree, middle, window.scale_factor()) {
-                            window.paint_quad(fill(line, rgb(color)));
+                            window.paint_quad(fill(line, color));
                         }
                     },
                 )
@@ -273,7 +276,7 @@ pub(super) fn trunk_below(
     if tree != RowTree::Child || !cx.look.density.tree_lines || width <= 0. {
         return None;
     }
-    let color = cx.theme.muted;
+    let color = cx.look.tree_color(cx.theme);
     let key = key.to_owned();
     Some(
         div()
@@ -295,7 +298,7 @@ pub(super) fn trunk_below(
                             point(x, snap(bounds.origin.y)),
                             point(x + weight, snap(bounds.bottom())),
                         );
-                        window.paint_quad(fill(trunk, rgb(color)));
+                        window.paint_quad(fill(trunk, color));
                     },
                 )
                 .size_full(),
@@ -421,6 +424,7 @@ pub(super) fn row(
     // color so a status reads at a glance, not only by hue.
     status_text: Option<&str>,
     lines: &[Vec<ResolvedToken>],
+    tokens: &[(String, String)],
     cx: &RowContext<'_>,
 ) -> Div {
     let (font, theme, look, width) = (cx.font, cx.theme, cx.look, cx.width);
@@ -544,22 +548,27 @@ pub(super) fn row(
     let agent_detail = agent_icon.filter(|_| !detail.is_empty());
     let (agent_size, agent_reserve) = agent_icon_size(font);
     let name_reserve = icon_reserve + agent_first.map_or(0., |_| agent_reserve);
+    let token_lines = if tokens.is_empty() { 0. } else { 1. };
     div()
         .debug_selector(|| format!("row-{key}"))
         .h(px(look.row_height(
             line_height(font)
-                * if configured {
-                    text_lines as f32
-                } else if show_detail {
-                    2.
-                } else {
-                    1.
-                },
+                * (token_lines
+                    + if configured {
+                        text_lines as f32
+                    } else if show_detail {
+                        2.
+                    } else {
+                        1.
+                    }),
         )))
         .w_full()
         .min_w_0()
         .flex_none()
         .relative()
+        .text_font(font)
+        .text_size(px(font.size))
+        .line_height(px(line_height(font)))
         .pl(px(content_x + indent))
         .pr(px(content_x))
         .flex()
@@ -567,7 +576,7 @@ pub(super) fn row(
         .gap(px(gap))
         .py(px(content_top))
         .cursor_pointer()
-        .map(|row| look.mark(row, key, (state, cx.mark), theme))
+        .map(|row| look.mark_nested(row, key, (state, cx.mark), indent, theme))
         // Tree lines run in the indent the row already reserves, so a child is
         // tied to its parent without box-drawing glyphs in the label.
         .children(guide(
@@ -699,6 +708,9 @@ pub(super) fn row(
                                     }),
                             )
                         })
+                })
+                .when(!tokens.is_empty(), |column| {
+                    column.child(badge_line(key, tokens, label_width, font, theme))
                 }),
         )
         .when_some(status_text, |row, text| {
@@ -744,6 +756,48 @@ pub(super) fn row(
 fn agent_icon_size(font: &FontConfig) -> (f32, f32) {
     let size = line_height(font).min(12.);
     (size, size + 4.)
+}
+
+fn badge_line(
+    key: &str,
+    tokens: &[(String, String)],
+    width: f32,
+    font: &FontConfig,
+    theme: &Theme,
+) -> Div {
+    let height = line_height(font);
+    div()
+        .debug_selector(|| format!("tokens-{key}"))
+        .w(px(width))
+        .h(px(height))
+        .flex()
+        .items_center()
+        .gap(px(4.))
+        .overflow_hidden()
+        .children(tokens.iter().map(|(name, value)| {
+            div()
+                .debug_selector(|| format!("token-{key}-{name}"))
+                .flex_none()
+                .h(px((height - 2.).max(0.)))
+                .px(px(4.))
+                .flex()
+                .items_center()
+                .rounded(px(crate::config::corners::SMALL))
+                .border_1()
+                .border_color(rgb(theme.active))
+                .text_size(px(font.size * 0.85))
+                .text_color(rgb(token_color(value, theme)))
+                .child(label_text(value))
+        }))
+}
+
+pub(super) fn token_color(value: &str, theme: &Theme) -> u32 {
+    match value.chars().next() {
+        Some('\u{2713}') => theme.palette[2],
+        Some('\u{2717}') => theme.palette[1],
+        Some('\u{25cf}') => theme.palette[3],
+        _ => theme.subtext(),
+    }
 }
 
 fn agent_mark(
