@@ -27,6 +27,7 @@ use std::borrow::Cow;
 pub(super) struct RowContext<'a> {
     pub(super) indicators: super::agents::Indicators,
     pub(super) font: &'a FontConfig,
+    pub(super) worktree_font: &'a FontConfig,
     pub(super) theme: &'a Theme,
     /// Density and style: spacing, highlight shape, and which details show.
     pub(super) look: SidebarLook,
@@ -211,5 +212,6 @@ pub(super) fn layout_for(mode: LayoutMode) -> &'static dyn RowLayout {
         LayoutMode::Minimal => &super::layouts::Minimal,
         // Herdr's own rows, nested under each device's header.
         LayoutMode::Devices => &super::layouts::Herdr,
+        LayoutMode::Orbita => &super::layouts::Orbita,
     }
 }

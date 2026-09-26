@@ -122,6 +122,7 @@ impl Preview {
         let context = RowContext {
             indicators,
             font,
+            worktree_font: font,
             theme,
             look,
             width: f32::from(self.width),
@@ -359,7 +360,7 @@ mod tests {
                         density != crate::config::Density::Compact
                     }
                     // Herdr's rows at normal density.
-                    LayoutMode::Orca | LayoutMode::Devices => true,
+                    LayoutMode::Orca | LayoutMode::Devices | LayoutMode::Orbita => true,
                     LayoutMode::Superset | LayoutMode::Minimal => false,
                 };
                 assert_eq!(

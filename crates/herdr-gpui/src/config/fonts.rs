@@ -22,6 +22,7 @@ pub(super) const LINE_HEIGHT_RANGE: RangeInclusive<f32> = 1.0..=2.0;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum FontFace {
     Sidebar,
+    SidebarWorktrees,
     Tabs,
     Terminal,
     Ui,
@@ -31,6 +32,7 @@ impl FontFace {
     pub(crate) fn name(self) -> &'static str {
         match self {
             Self::Sidebar => "sidebar",
+            Self::SidebarWorktrees => "sidebar_worktrees",
             Self::Tabs => "tabs",
             Self::Terminal => "terminal",
             Self::Ui => "ui",
@@ -40,6 +42,7 @@ impl FontFace {
     pub(crate) fn size(self, config: &Config) -> f32 {
         match self {
             Self::Sidebar => config.sidebar.size,
+            Self::SidebarWorktrees => config.sidebar_worktrees.size,
             Self::Tabs => config.tabs.size,
             Self::Terminal => config.terminal.size,
             Self::Ui => config.ui.size,
@@ -446,6 +449,7 @@ impl Config {
             &mut self.tabs,
             &mut self.terminal,
             &mut self.ui,
+            &mut self.sidebar_worktrees,
         ];
         if check_defaults {
             for face in faces.iter_mut() {
@@ -459,7 +463,7 @@ impl Config {
         }
         // A terminal face patched with the icons needs no cascade to draw
         // them, unless it is one of the configured families this machine lacks.
-        let [_, _, terminal, _] = &faces;
+        let [_, _, terminal, _, _] = &faces;
         let terminal_draws_icons =
             draws_icons(&terminal.family) && !self.missing_fonts.contains(&terminal.family);
         let detected = symbol_fallbacks(installed);

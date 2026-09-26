@@ -47,6 +47,7 @@ impl HerdrWindow {
         let font = &self.config.sidebar;
         let spaces_custom = self.config.usage.inline
             && self.config.sidebar_layout.spaces != crate::config::SpaceLayout::default();
+        let worktree_font = &self.config.sidebar_worktrees;
         let theme = &self.theme;
         // The field is the heading, so it takes the heading's face.
         self.sidebar_search.input.update(cx, |input, cx| {
@@ -138,6 +139,7 @@ impl HerdrWindow {
             let row_cx = RowContext {
                 indicators,
                 font,
+                worktree_font,
                 theme,
                 look,
                 width,

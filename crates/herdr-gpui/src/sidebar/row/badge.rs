@@ -22,6 +22,12 @@ pub(in crate::sidebar) struct RowBadge {
 }
 
 impl RowBadge {
+    pub(in crate::sidebar) fn without_pr(self) -> Option<Self> {
+        Self::new(None, self.dirty, self.teleported, self.noted)
+    }
+}
+
+impl RowBadge {
     pub(in crate::sidebar) fn lines(&self, layout: &SidebarMetrics) -> usize {
         1 + usize::from(self.pr.is_some() && layout.pr_counts())
     }

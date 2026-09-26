@@ -312,6 +312,7 @@ mod tests {
         let cx = RowContext {
             indicators: Indicators::new(None, None, false, &theme),
             font: &font,
+            worktree_font: &font,
             theme: &theme,
             look: layout::for_mode(LayoutMode::default()),
             width: 232.,

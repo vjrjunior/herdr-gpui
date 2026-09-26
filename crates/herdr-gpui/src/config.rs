@@ -153,6 +153,7 @@ pub struct Config {
     /// selection tools, after it is copied.
     pub keep_selection_after_copy: bool,
     pub sidebar: FontConfig,
+    pub sidebar_worktrees: FontConfig,
     pub tabs: FontConfig,
     pub terminal: FontConfig,
     /// Blank space around every terminal's cells.
@@ -482,6 +483,7 @@ impl Default for Config {
             missing_weight: None,
             palette: crate::palette::PaletteConfig::default(),
             sidebar: font(monospace, 12.0),
+            sidebar_worktrees: font(monospace, 12.0),
             // Tabs are terminal chrome, so they read in the monospace face the
             // sidebar and terminal use, as they do in the reference UI.
             tabs: font(monospace, 12.0),
@@ -522,6 +524,7 @@ struct Settings {
     editor_command: Option<crate::editor::EditorCommand>,
     keep_selection_after_copy: Option<bool>,
     sidebar: sidebar_style::SidebarSettings,
+    sidebar_worktrees: FontSettings,
     tabs: FontSettings,
     terminal: FontSettings,
     ui: FontSettings,
@@ -822,6 +825,7 @@ impl Config {
                 ("sidebar", &mut settings.sidebar.font),
                 ("tabs", &mut settings.tabs),
                 ("ui", &mut settings.ui),
+                ("sidebar_worktrees", &mut settings.sidebar_worktrees),
             ]
             .into_iter()
             .flat_map(|(name, face)| face.reject_terminal_keys(name)),
@@ -930,6 +934,10 @@ impl Config {
         ] {
             settings.apply(name, font)?;
         }
+        config.sidebar_worktrees = config.sidebar.clone();
+        settings
+            .sidebar_worktrees
+            .apply("sidebar_worktrees", &mut config.sidebar_worktrees)?;
         Ok(config)
     }
 }
