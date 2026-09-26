@@ -6,6 +6,13 @@ use gpui::{prelude::*, *};
 /// comfortable size for the pointer.
 const AVATAR: f32 = 20.;
 
+const BRANCH_ICON: f32 = 14.;
+const BRANCH_DOT: f32 = 6.;
+const BRANCH_HEAD_NODE: Point<f32> = Point {
+    x: 17. / 24.,
+    y: 5.5 / 24.,
+};
+
 /// Native chrome the window draws above its body; popups must clear it.
 pub(super) const HEIGHT: f32 = 34.;
 
@@ -39,6 +46,8 @@ impl HerdrWindow {
         let background = rgb(theme.surface).blend(rgba(0xffffff1a));
         let status = self.git.status();
         let running = self.git.running().is_some();
+        let dirty = status.is_some_and(|status| status.dirty());
+        let branch_dot = self.config.layout.mode == crate::config::LayoutMode::Orbita;
         let pr = self.git_pull_request().map(|pr| {
             (
                 format!("#{}", pr.number),
@@ -118,7 +127,7 @@ impl HerdrWindow {
                         )
                         // The pull request's churn is history; the badge
                         // says work is still sitting in the checkout.
-                        .when(status.is_some_and(|status| status.dirty()), |button| {
+                        .when(dirty && !branch_dot, |button| {
                             button.child(
                                 crate::icons::uncommitted(theme, 18.)
                                     .debug_selector(|| "titlebar-git-dirty".into()),
@@ -144,10 +153,12 @@ impl HerdrWindow {
                                             .child(format!("-{}", status.deletions)),
                                     )
                                 })
-                                .child(
-                                    crate::icons::uncommitted(theme, 18.)
-                                        .debug_selector(|| "titlebar-git-dirty".into()),
-                                )
+                                .when(!branch_dot, |button| {
+                                    button.child(
+                                        crate::icons::uncommitted(theme, 18.)
+                                            .debug_selector(|| "titlebar-git-dirty".into()),
+                                    )
+                                })
                         },
                     ),
                 })
@@ -166,15 +177,36 @@ impl HerdrWindow {
                             button.bg(background.blend(rgba((theme.foreground << 8) | 0x14)))
                         })
                         .child(
-                            svg()
-                                .path("icons/git-branch.svg")
-                                .size(px(14.))
+                            div()
+                                .relative()
+                                .size(px(BRANCH_ICON))
                                 .flex_none()
-                                .text_color(rgb(if running {
-                                    theme.ink(theme.palette[3])
-                                } else {
-                                    theme.muted
-                                })),
+                                .child(
+                                    svg()
+                                        .path("icons/git-branch.svg")
+                                        .size(px(BRANCH_ICON))
+                                        .text_color(rgb(if running {
+                                            theme.ink(theme.palette[3])
+                                        } else {
+                                            theme.muted
+                                        })),
+                                )
+                                .when(dirty && branch_dot, |icon| {
+                                    icon.child(
+                                        div()
+                                            .debug_selector(|| "titlebar-git-dirty-dot".into())
+                                            .absolute()
+                                            .left(px(
+                                                BRANCH_ICON * BRANCH_HEAD_NODE.x - BRANCH_DOT / 2.
+                                            ))
+                                            .top(px(
+                                                BRANCH_ICON * BRANCH_HEAD_NODE.y - BRANCH_DOT / 2.
+                                            ))
+                                            .size(px(BRANCH_DOT))
+                                            .rounded_full()
+                                            .bg(rgb(theme.palette[3])),
+                                    )
+                                }),
                         )
                         .child(
                             svg()
@@ -762,6 +794,68 @@ mod git_button_tests {
         });
         assert!(cx.debug_bounds("titlebar-git-pr-lines").is_some());
         assert!(cx.debug_bounds("titlebar-git-dirty").is_none());
+    }
+
+    #[gpui::test]
+    fn orbita_marks_uncommitted_work_with_a_dot_on_the_branch_icon(cx: &mut TestAppContext) {
+        let dirty = Status {
+            additions: 12,
+            deletions: 3,
+            untracked: 1,
+        };
+        for (pull_request, status) in [
+            (false, dirty),
+            (true, dirty),
+            (false, Status::default()),
+            (true, Status::default()),
+        ] {
+            let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
+            let input = Input {
+                checkout: None,
+                repo_key: REPO_KEY.into(),
+                branch: "develop".into(),
+            };
+            cx.simulate_resize(size(px(900.), px(600.)));
+            cx.update(|_, cx| {
+                view.update(cx, |view, cx| {
+                    view.config.layout.mode = crate::config::LayoutMode::Orbita;
+                    view.git = Git::fixture(input.clone(), status);
+                    if pull_request {
+                        view.menu.github = crate::github::Auth::connected_fixture();
+                        view.menu.pr_cache.seed(
+                            input,
+                            crate::pull_request::fixture().unwrap(),
+                            std::time::Instant::now(),
+                        );
+                    }
+                    cx.notify();
+                })
+            });
+            cx.update(|window, cx| {
+                window.refresh();
+                let _ = window.draw(cx);
+            });
+            let case = format!("pull request {pull_request}, {status:?}");
+            assert!(cx.debug_bounds("titlebar-git-dirty").is_none(), "{case}");
+            assert_eq!(
+                cx.debug_bounds("titlebar-git-pr").is_some(),
+                pull_request,
+                "{case}"
+            );
+            assert_eq!(
+                cx.debug_bounds("titlebar-git-additions").is_some(),
+                !pull_request && status.dirty(),
+                "{case}"
+            );
+            let dot = cx.debug_bounds("titlebar-git-dirty-dot");
+            assert_eq!(dot.is_some(), status.dirty(), "{case}");
+            if let Some(dot) = dot {
+                let button = cx.debug_bounds("titlebar-git").unwrap();
+                assert_eq!(dot.size, size(px(6.), px(6.)), "{case}");
+                assert!(button.contains(&dot.center()), "{case}");
+                assert!(dot.center().y < button.center().y, "{case}");
+            }
+        }
     }
 }
 

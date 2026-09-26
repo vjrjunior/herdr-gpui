@@ -493,6 +493,8 @@ spacing:
   (`herdr workspace report-metadata --token NAME=VALUE`), in the order the
   daemon sends them. A leading `✓`, `✗`, or `●` colors a badge green, red, or
   yellow, and a reported `pr` token replaces the native pull request number.
+  The title bar's Git control marks uncommitted work with a yellow dot on its
+  branch icon instead of the boxed pencil.
 
 New installs start with `comfortable-rounded`: the first launch writes it into
 the new `config-gpui.local.toml`. Existing override files and migrated personal
