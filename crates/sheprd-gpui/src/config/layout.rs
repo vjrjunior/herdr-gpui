@@ -39,7 +39,10 @@ pub enum Style {
 pub enum LayoutMode {
     /// Herdr's rows: `normal`, `compact`, `comfortable`, or any of them with a
     /// `-rounded` suffix.
-    Classic { density: Density, style: Style },
+    Classic {
+        density: Density,
+        style: Style,
+    },
     /// Single-line rows with an icon slot and pull request counts.
     Superset,
     /// Rounded cards with a meta line for host, branch, and pull request.
@@ -48,6 +51,7 @@ pub enum LayoutMode {
     Minimal,
     /// Each device with its agents under it, and a search over them.
     Devices,
+    Orbita,
 }
 
 impl Default for LayoutMode {
@@ -69,10 +73,11 @@ impl LayoutMode {
         "orca",
         "minimal",
         "devices",
+        "orbita",
     ];
 
     /// Every named layout, in the order menus list them.
-    pub const ALL: [Self; 10] = [
+    pub const ALL: [Self; 11] = [
         Self::new(Density::Normal, Style::Flat),
         Self::new(Density::Compact, Style::Flat),
         Self::new(Density::Comfortable, Style::Flat),
@@ -83,6 +88,7 @@ impl LayoutMode {
         Self::Orca,
         Self::Minimal,
         Self::Devices,
+        Self::Orbita,
     ];
 
     pub const fn new(density: Density, style: Style) -> Self {
@@ -95,7 +101,7 @@ impl LayoutMode {
         match self {
             Self::Classic { density, .. } => density,
             Self::Superset | Self::Minimal | Self::Devices => Density::Normal,
-            Self::Orca => Density::Comfortable,
+            Self::Orca | Self::Orbita => Density::Comfortable,
         }
     }
 
@@ -104,7 +110,7 @@ impl LayoutMode {
         match self {
             Self::Classic { style, .. } => style,
             Self::Superset | Self::Minimal | Self::Devices => Style::Flat,
-            Self::Orca => Style::Rounded,
+            Self::Orca | Self::Orbita => Style::Rounded,
         }
     }
 
@@ -136,6 +142,7 @@ impl LayoutMode {
             Self::Orca => "orca",
             Self::Minimal => "minimal",
             Self::Devices => "devices",
+            Self::Orbita => "orbita",
         }
     }
 
@@ -159,6 +166,7 @@ impl LayoutMode {
             Self::Orca => "layout-orca",
             Self::Minimal => "layout-minimal",
             Self::Devices => "layout-devices",
+            Self::Orbita => "orbita-layout",
         }
     }
 }

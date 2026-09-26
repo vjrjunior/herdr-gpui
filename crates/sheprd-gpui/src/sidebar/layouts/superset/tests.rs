@@ -30,6 +30,7 @@ fn the_slot_dot_follows_a_configured_leading_state_icon() {
     let cx = RowContext {
         indicators,
         font: &font,
+        worktree_font: &font,
         theme: &theme,
         look: layout::for_mode(LayoutMode::Superset),
         width: 232.,

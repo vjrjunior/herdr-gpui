@@ -23,6 +23,7 @@ fn teleported_rows_fade_only_their_workspace_tokens() {
             &theme,
         ),
         font: &font,
+        worktree_font: &font,
         theme: &theme,
         look: layout::for_mode(LayoutMode::default()),
         width: 232.,
