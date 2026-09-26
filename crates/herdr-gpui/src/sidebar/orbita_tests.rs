@@ -170,3 +170,47 @@ fn token_colors_follow_their_leading_mark() {
     assert_eq!(color("#646 \u{b7} open"), theme.subtext());
     assert_eq!(color(""), theme.subtext());
 }
+
+#[gpui::test]
+fn orbita_folds_a_repository_with_a_chevron(cx: &mut TestAppContext) {
+    let cx = draw(cx, LayoutMode::Orbita, 15., None);
+    let fold = bounds(cx, "collapse-3");
+    let chevron = bounds(cx, "chevron-3");
+    assert_eq!(chevron.size.width, px(12.));
+    assert!(fold.contains(&chevron.center()));
+    cx.simulate_click(fold.center(), Default::default());
+    cx.update(|window, cx| full_draw(window, cx).clear(cx));
+    let view = cx.update(|window, _| window.root::<crate::HerdrWindow>().flatten().unwrap());
+    view.read_with(cx, |view, _| {
+        assert!(view.collapsed_repos.contains(REPO_KEY))
+    });
+}
+
+#[gpui::test]
+fn herdr_layouts_keep_their_fold_triangle(cx: &mut TestAppContext) {
+    let cx = draw(
+        cx,
+        LayoutMode::new(Density::Comfortable, Style::Rounded),
+        15.,
+        None,
+    );
+    assert!(cx.debug_bounds("collapse-3").is_some());
+    assert!(cx.debug_bounds("chevron-3").is_none());
+}
+
+#[gpui::test]
+fn the_fold_chevrons_load_and_render(cx: &mut TestAppContext) {
+    use gpui::{AssetSource, DevicePixels, Image, ImageFormat};
+    let renderer = cx.update(|cx| cx.svg_renderer());
+    for path in ["icons/chevron-right.svg", "icons/chevron-down.svg"] {
+        let bytes = crate::icons::Icons.load(path).unwrap().unwrap();
+        let image = Image::from_bytes(ImageFormat::Svg, bytes.into_owned())
+            .to_image_data(renderer.clone())
+            .unwrap();
+        let rendered = image.size(0);
+        assert_eq!(rendered.width, rendered.height, "{path}");
+        assert!(rendered.width >= DevicePixels(16), "{path}");
+        let pixels = image.as_bytes(0).unwrap();
+        assert!(pixels.chunks_exact(4).any(|pixel| pixel[3] > 0), "{path}");
+    }
+}
