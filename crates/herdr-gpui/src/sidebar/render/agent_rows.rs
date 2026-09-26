@@ -46,6 +46,7 @@ impl HerdrWindow {
             let row_cx = RowContext {
                 indicators,
                 font,
+                worktree_font: &self.config.sidebar_worktrees,
                 theme,
                 look,
                 width,

@@ -158,6 +158,7 @@ fn cells_hand_their_state_and_data_to_the_layout() {
     let cx = RowContext {
         indicators: Indicators::new(None, false, &theme),
         font: &font,
+        worktree_font: &font,
         theme: &theme,
         look: for_mode(Default::default()),
         width: 232.,

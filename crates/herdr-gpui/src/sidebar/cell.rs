@@ -27,6 +27,7 @@ use std::borrow::Cow;
 pub(super) struct RowContext<'a> {
     pub(super) indicators: super::agents::Indicators,
     pub(super) font: &'a FontConfig,
+    pub(super) worktree_font: &'a FontConfig,
     pub(super) theme: &'a Theme,
     /// Density and style: spacing, highlight shape, and which details show.
     pub(super) look: SidebarLook,
@@ -195,5 +196,6 @@ pub(super) fn layout_for(mode: LayoutMode) -> &'static dyn RowLayout {
         LayoutMode::Superset => &super::layouts::Superset,
         LayoutMode::Orca => &super::layouts::Orca,
         LayoutMode::Minimal => &super::layouts::Minimal,
+        LayoutMode::Orbita => &super::layouts::Orbita,
     }
 }

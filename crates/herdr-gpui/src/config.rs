@@ -88,6 +88,7 @@ pub struct Config {
     /// selection tools, after it is copied.
     pub keep_selection_after_copy: bool,
     pub sidebar: FontConfig,
+    pub sidebar_worktrees: FontConfig,
     pub tabs: FontConfig,
     pub terminal: FontConfig,
     pub ui: FontConfig,
@@ -311,6 +312,7 @@ impl Default for Config {
             unknown_keys: Vec::new(),
             palette: crate::palette::PaletteConfig::default(),
             sidebar: font(monospace, 12.0),
+            sidebar_worktrees: font(monospace, 12.0),
             // Tabs are terminal chrome, so they read in the monospace face the
             // sidebar and terminal use, as they do in the reference UI.
             tabs: font(monospace, 12.0),
@@ -337,6 +339,7 @@ struct Settings {
     open_links_in: LinkTarget,
     keep_selection_after_copy: Option<bool>,
     sidebar: sidebar_style::SidebarSettings,
+    sidebar_worktrees: FontSettings,
     tabs: FontSettings,
     terminal: FontSettings,
     ui: FontSettings,
@@ -670,6 +673,10 @@ impl Config {
         ] {
             settings.apply(name, font)?;
         }
+        config.sidebar_worktrees = config.sidebar.clone();
+        settings
+            .sidebar_worktrees
+            .apply("sidebar_worktrees", &mut config.sidebar_worktrees)?;
         Ok(config)
     }
 }

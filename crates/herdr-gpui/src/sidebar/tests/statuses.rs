@@ -134,9 +134,11 @@ fn symbol_rows_keep_layout_density_and_expand_child_indent() {
                     None,
                     None,
                     &[],
+                    &[],
                     &super::super::cell::RowContext {
                         indicators,
                         font: &font,
+                        worktree_font: &font,
                         theme: &theme,
                         look: layout,
                         width: 160.,

@@ -317,6 +317,7 @@ impl Config {
         Self::save_font_families_path(
             &[
                 FontFace::Sidebar,
+                FontFace::SidebarWorktrees,
                 FontFace::Tabs,
                 FontFace::Terminal,
                 FontFace::Ui,

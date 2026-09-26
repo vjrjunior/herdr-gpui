@@ -122,6 +122,7 @@ impl Preview {
         let context = RowContext {
             indicators,
             font,
+            worktree_font: font,
             theme,
             look,
             width: f32::from(self.width),
@@ -358,7 +359,7 @@ mod tests {
                     LayoutMode::Classic { density, .. } => {
                         density != crate::config::Density::Compact
                     }
-                    LayoutMode::Orca => true,
+                    LayoutMode::Orca | LayoutMode::Orbita => true,
                     LayoutMode::Superset | LayoutMode::Minimal => false,
                 };
                 assert_eq!(

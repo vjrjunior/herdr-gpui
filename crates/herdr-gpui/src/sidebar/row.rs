@@ -11,7 +11,10 @@ use super::{
     glyph_width, line_height, segment_budgets,
     tokens::ResolvedToken,
 };
-use crate::config::{FontConfig, Theme};
+use crate::{
+    config::{FontConfig, Theme},
+    fonts::StyledFont,
+};
 use gpui::{prelude::*, *};
 use herdr_client::protocol::AgentStatus;
 use std::sync::Arc;
@@ -291,6 +294,7 @@ pub(super) fn row(
     // color so a status reads at a glance, not only by hue.
     status_text: Option<&str>,
     lines: &[Vec<ResolvedToken>],
+    tokens: &[(String, String)],
     cx: &RowContext<'_>,
 ) -> Div {
     let (font, theme, look, width) = (cx.font, cx.theme, cx.look, cx.width);
@@ -307,7 +311,7 @@ pub(super) fn row(
     } else {
         0
     };
-    let padding = layout.padding();
+    let padding = look.tree_padding();
     let content_x = look.content_x();
     let gap = layout.gap();
     let vertical_padding = look.row_padding();
@@ -401,22 +405,27 @@ pub(super) fn row(
     let agent_detail = agent_icon.filter(|_| !detail.is_empty());
     let (agent_size, agent_reserve) = agent_icon_size(font);
     let name_reserve = icon_reserve + agent_first.map_or(0., |_| agent_reserve);
+    let token_lines = if tokens.is_empty() { 0. } else { 1. };
     div()
         .debug_selector(|| format!("row-{key}"))
         .h(px(look.row_height(
             line_height(font)
-                * if configured {
-                    text_lines as f32
-                } else if show_detail {
-                    2.
-                } else {
-                    1.
-                },
+                * (token_lines
+                    + if configured {
+                        text_lines as f32
+                    } else if show_detail {
+                        2.
+                    } else {
+                        1.
+                    }),
         )))
         .w_full()
         .min_w_0()
         .flex_none()
         .relative()
+        .text_font(font)
+        .text_size(px(font.size))
+        .line_height(px(line_height(font)))
         .pl(px(content_x + indent))
         .pr(px(content_x))
         .flex()
@@ -425,11 +434,11 @@ pub(super) fn row(
         .py(px(content_top))
         .cursor_pointer()
         .map(|row| cx.mark.apply(row, key, &look))
-        .map(|row| look.mark(row, key, state, theme))
+        .map(|row| look.mark_nested(row, key, state, indent, theme))
         // Tree lines run in the indent the row already reserves, so a child is
         // tied to its parent without box-drawing glyphs in the label.
         .when(draw_tree, |row| {
-            let (color, font) = (theme.muted, font.clone());
+            let (color, font) = (look.tree_color(theme), font.clone());
             let gutter = cx.nest + look.tree_gutter() + extra_status_width;
             row.child(
                 div()
@@ -450,7 +459,7 @@ pub(super) fn row(
                                     content_top,
                                     window.scale_factor(),
                                 ) {
-                                    window.paint_quad(fill(line, rgb(color)));
+                                    window.paint_quad(fill(line, color));
                                 }
                             },
                         )
@@ -575,6 +584,9 @@ pub(super) fn row(
                                     }),
                             )
                         })
+                })
+                .when(!tokens.is_empty(), |column| {
+                    column.child(badge_line(key, tokens, label_width, font, theme))
                 }),
         )
         .when_some(status_text, |row, text| {
@@ -619,6 +631,48 @@ pub(super) fn row(
 fn agent_icon_size(font: &FontConfig) -> (f32, f32) {
     let size = line_height(font).min(12.);
     (size, size + 4.)
+}
+
+fn badge_line(
+    key: &str,
+    tokens: &[(String, String)],
+    width: f32,
+    font: &FontConfig,
+    theme: &Theme,
+) -> Div {
+    let height = line_height(font);
+    div()
+        .debug_selector(|| format!("tokens-{key}"))
+        .w(px(width))
+        .h(px(height))
+        .flex()
+        .items_center()
+        .gap(px(4.))
+        .overflow_hidden()
+        .children(tokens.iter().map(|(name, value)| {
+            div()
+                .debug_selector(|| format!("token-{key}-{name}"))
+                .flex_none()
+                .h(px((height - 2.).max(0.)))
+                .px(px(4.))
+                .flex()
+                .items_center()
+                .rounded(px(crate::config::corners::SMALL))
+                .border_1()
+                .border_color(rgb(theme.active))
+                .text_size(px(font.size * 0.85))
+                .text_color(rgb(token_color(value, theme)))
+                .child(label_text(value))
+        }))
+}
+
+pub(super) fn token_color(value: &str, theme: &Theme) -> u32 {
+    match value.chars().next() {
+        Some('\u{2713}') => theme.palette[2],
+        Some('\u{2717}') => theme.palette[1],
+        Some('\u{25cf}') => theme.palette[3],
+        _ => theme.subtext(),
+    }
 }
 
 fn agent_mark(

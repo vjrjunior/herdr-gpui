@@ -358,6 +358,7 @@ mod tests {
         let cx = RowContext {
             indicators,
             font: &font,
+            worktree_font: &font,
             theme: &theme,
             look: layout::for_mode(LayoutMode::Superset),
             width: 232.,

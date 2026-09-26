@@ -47,6 +47,7 @@ pub(crate) struct SidebarMetrics {
     pub(crate) highlight: Highlight,
     pub(crate) tree_lines: bool,
     pub(crate) header_case: HeaderCase,
+    pub(crate) orbita: bool,
 }
 
 impl SidebarMetrics {
@@ -58,6 +59,7 @@ impl SidebarMetrics {
             Density::Compact => Self::compact(),
         };
         match mode.style() {
+            _ if mode == LayoutMode::Orbita => density.rounded().orbita(),
             Style::Flat => density,
             Style::Rounded => density.rounded(),
         }
@@ -148,6 +150,7 @@ impl SidebarMetrics {
         highlight: Highlight::Fill,
         tree_lines: true,
         header_case: HeaderCase::Lower,
+        orbita: false,
     };
 
     /// Inset rows with rounded, outlined highlights. Worktrees keep their

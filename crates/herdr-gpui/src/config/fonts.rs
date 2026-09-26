@@ -19,6 +19,7 @@ pub(super) const LINE_HEIGHT_RANGE: RangeInclusive<f32> = 1.0..=2.0;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum FontFace {
     Sidebar,
+    SidebarWorktrees,
     Tabs,
     Terminal,
     Ui,
@@ -28,6 +29,7 @@ impl FontFace {
     pub(crate) fn set_size(self, config: &mut Config, size: f32) {
         match self {
             Self::Sidebar => config.sidebar.size = size,
+            Self::SidebarWorktrees => config.sidebar_worktrees.size = size,
             Self::Tabs => config.tabs.size = size,
             Self::Terminal => config.terminal.size = size,
             Self::Ui => config.ui.size = size,
@@ -37,6 +39,7 @@ impl FontFace {
     pub(crate) fn name(self) -> &'static str {
         match self {
             Self::Sidebar => "sidebar",
+            Self::SidebarWorktrees => "sidebar_worktrees",
             Self::Tabs => "tabs",
             Self::Terminal => "terminal",
             Self::Ui => "ui",
@@ -46,6 +49,7 @@ impl FontFace {
     pub(crate) fn size(self, config: &Config) -> f32 {
         match self {
             Self::Sidebar => config.sidebar.size,
+            Self::SidebarWorktrees => config.sidebar_worktrees.size,
             Self::Tabs => config.tabs.size,
             Self::Terminal => config.terminal.size,
             Self::Ui => config.ui.size,
@@ -241,7 +245,7 @@ const SYMBOL_FAMILY_MARKER: &str = "nerd font";
 /// detection keeps only the best-ranked few families.
 const MAX_DETECTED_FALLBACKS: usize = 3;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct FontConfig {
     pub family: String,
     pub size: f32,
@@ -320,6 +324,7 @@ impl Config {
         self.replace_undrawable_fonts(super::bitmap_fonts::is_undrawable);
         let mut faces = [
             &mut self.sidebar,
+            &mut self.sidebar_worktrees,
             &mut self.tabs,
             &mut self.terminal,
             &mut self.ui,

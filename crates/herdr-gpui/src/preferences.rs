@@ -358,6 +358,12 @@ impl HerdrWindow {
                     &self.config.sidebar,
                 ),
                 (
+                    FontFace::SidebarWorktrees,
+                    "preferences-font-sidebar-worktrees",
+                    "Worktrees",
+                    &self.config.sidebar_worktrees,
+                ),
+                (
                     FontFace::Tabs,
                     "preferences-font-tabs",
                     "Tabs",

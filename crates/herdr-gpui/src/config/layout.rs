@@ -46,13 +46,17 @@ pub enum Style {
 pub enum LayoutMode {
     /// Herdr's rows: `normal`, `compact`, `comfortable`, or any of them with a
     /// `-rounded` suffix.
-    Classic { density: Density, style: Style },
+    Classic {
+        density: Density,
+        style: Style,
+    },
     /// Single-line rows with an icon slot and pull request counts.
     Superset,
     /// Rounded cards with a meta line for host, branch, and pull request.
     Orca,
     /// One line per row with only the status and the name.
     Minimal,
+    Orbita,
 }
 
 impl Default for LayoutMode {
@@ -73,10 +77,11 @@ impl LayoutMode {
         "superset",
         "orca",
         "minimal",
+        "orbita",
     ];
 
     /// Every named layout, in the order menus list them.
-    pub const ALL: [Self; 9] = [
+    pub const ALL: [Self; 10] = [
         Self::new(Density::Normal, Style::Flat),
         Self::new(Density::Compact, Style::Flat),
         Self::new(Density::Comfortable, Style::Flat),
@@ -86,6 +91,7 @@ impl LayoutMode {
         Self::Superset,
         Self::Orca,
         Self::Minimal,
+        Self::Orbita,
     ];
 
     pub const fn new(density: Density, style: Style) -> Self {
@@ -98,7 +104,7 @@ impl LayoutMode {
         match self {
             Self::Classic { density, .. } => density,
             Self::Superset | Self::Minimal => Density::Normal,
-            Self::Orca => Density::Comfortable,
+            Self::Orca | Self::Orbita => Density::Comfortable,
         }
     }
 
@@ -107,7 +113,7 @@ impl LayoutMode {
         match self {
             Self::Classic { style, .. } => style,
             Self::Superset | Self::Minimal => Style::Flat,
-            Self::Orca => Style::Rounded,
+            Self::Orca | Self::Orbita => Style::Rounded,
         }
     }
 
@@ -125,6 +131,7 @@ impl LayoutMode {
             Self::Superset => "superset",
             Self::Orca => "orca",
             Self::Minimal => "minimal",
+            Self::Orbita => "orbita",
         }
     }
 
@@ -142,6 +149,7 @@ impl LayoutMode {
             Self::Superset => "Superset",
             Self::Orca => "Orca",
             Self::Minimal => "Minimal",
+            Self::Orbita => "Orbita",
         }
     }
 }

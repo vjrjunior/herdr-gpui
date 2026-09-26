@@ -86,6 +86,7 @@ fn face_font(config: &Config, face: FontFace) -> &FontConfig {
     match face {
         FontFace::Terminal => &config.terminal,
         FontFace::Sidebar => &config.sidebar,
+        FontFace::SidebarWorktrees => &config.sidebar_worktrees,
         FontFace::Tabs => &config.tabs,
         FontFace::Ui => &config.ui,
     }
@@ -103,6 +104,7 @@ fn role_label(face: FontFace) -> &'static str {
     match face {
         FontFace::Terminal => "Terminal",
         FontFace::Sidebar => "Sidebar",
+        FontFace::SidebarWorktrees => "Worktrees",
         FontFace::Tabs => "Tabs",
         FontFace::Ui => "Interface",
     }
@@ -392,7 +394,7 @@ impl SettingsWindow {
         let font = self.control_specimen_font();
         let sample = match self.controls.active_face {
             FontFace::Terminal => "let answer = 42;\nif answer != 0 {\n    println!(\"ready\");\n}",
-            FontFace::Sidebar => {
+            FontFace::Sidebar | FontFace::SidebarWorktrees => {
                 "herdr-gpui / workspace\n  claude  Working\n  codex   Ready for review"
             }
             FontFace::Tabs => "main.rs   agent / review\nChanges   Terminal   Preview",

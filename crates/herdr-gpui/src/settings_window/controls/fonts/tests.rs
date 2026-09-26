@@ -233,6 +233,7 @@ fn family_commits_capture_target_and_only_change_families(cx: &mut TestAppContex
                     let font = match face {
                         FontFace::Terminal => &mut config.terminal,
                         FontFace::Sidebar => &mut config.sidebar,
+                        FontFace::SidebarWorktrees => &mut config.sidebar_worktrees,
                         FontFace::Tabs => &mut config.tabs,
                         FontFace::Ui => &mut config.ui,
                     };
