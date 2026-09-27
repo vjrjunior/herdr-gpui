@@ -225,13 +225,25 @@ fn the_fold_chevrons_load_and_render(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
-fn orbita_marks_uncommitted_work_with_a_dot(cx: &mut TestAppContext) {
+fn orbita_marks_uncommitted_work_on_the_branch_line(cx: &mut TestAppContext) {
     let cx = draw(cx, LayoutMode::Orbita, 15., None);
-    let mark = bounds(cx, "dirty-agent-launcher");
-    let dot = bounds(cx, "dirty-dot");
-    assert_eq!(dot.size.width, px(8.));
-    assert_eq!(dot.size.height, px(8.));
-    assert!(mark.contains(&dot.center()));
+    let name = bounds(cx, "name-agent-launcher");
+    let detail = bounds(cx, "detail-agent-launcher");
+    let icon = bounds(cx, "branch-dirty-agent-launcher");
+    let dot = bounds(cx, "branch-dirty-dot-agent-launcher");
+    assert!(cx.debug_bounds("dirty-agent-launcher").is_none());
+    assert!(
+        cx.debug_bounds("pr-agent-launcher").is_none(),
+        "a dirty row without a pull request reserves no badge column"
+    );
+    assert!(icon.top() >= name.bottom());
+    assert!(icon.right() <= detail.left());
+    assert!((icon.center().y - detail.center().y).abs() <= px(0.5));
+    assert_eq!(dot.size, size(px(5.), px(5.)));
+    assert!(icon.contains(&dot.center()));
+    assert!(dot.center().x > icon.center().x && dot.center().y < icon.center().y);
+    assert!(cx.debug_bounds("branch-dirty-herdr").is_none());
+    assert!(cx.debug_bounds("detail-herdr").is_some());
 }
 
 #[gpui::test]
@@ -243,5 +255,5 @@ fn herdr_layouts_keep_the_uncommitted_pencil(cx: &mut TestAppContext) {
         None,
     );
     assert!(cx.debug_bounds("dirty-agent-launcher").is_some());
-    assert!(cx.debug_bounds("dirty-dot").is_none());
+    assert!(cx.debug_bounds("branch-dirty-agent-launcher").is_none());
 }

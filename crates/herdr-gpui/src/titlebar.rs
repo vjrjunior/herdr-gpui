@@ -7,11 +7,6 @@ use gpui::{prelude::*, *};
 const AVATAR: f32 = 20.;
 
 const BRANCH_ICON: f32 = 14.;
-const BRANCH_DOT: f32 = 6.;
-const BRANCH_HEAD_NODE: Point<f32> = Point {
-    x: 17. / 24.,
-    y: 5.5 / 24.,
-};
 
 /// Native chrome the window draws above its body; popups must clear it.
 pub(super) const HEIGHT: f32 = 34.;
@@ -177,36 +172,20 @@ impl HerdrWindow {
                             button.bg(background.blend(rgba((theme.foreground << 8) | 0x14)))
                         })
                         .child(
-                            div()
-                                .relative()
-                                .size(px(BRANCH_ICON))
-                                .flex_none()
-                                .child(
-                                    svg()
-                                        .path("icons/git-branch.svg")
-                                        .size(px(BRANCH_ICON))
-                                        .text_color(rgb(if running {
-                                            theme.ink(theme.palette[3])
-                                        } else {
-                                            theme.muted
-                                        })),
+                            crate::icons::branch(
+                                BRANCH_ICON,
+                                if running {
+                                    theme.ink(theme.palette[3])
+                                } else {
+                                    theme.muted
+                                },
+                            )
+                            .when(dirty && branch_dot, |icon| {
+                                icon.child(
+                                    crate::icons::branch_dot(theme, BRANCH_ICON)
+                                        .debug_selector(|| "titlebar-git-dirty-dot".into()),
                                 )
-                                .when(dirty && branch_dot, |icon| {
-                                    icon.child(
-                                        div()
-                                            .debug_selector(|| "titlebar-git-dirty-dot".into())
-                                            .absolute()
-                                            .left(px(
-                                                BRANCH_ICON * BRANCH_HEAD_NODE.x - BRANCH_DOT / 2.
-                                            ))
-                                            .top(px(
-                                                BRANCH_ICON * BRANCH_HEAD_NODE.y - BRANCH_DOT / 2.
-                                            ))
-                                            .size(px(BRANCH_DOT))
-                                            .rounded_full()
-                                            .bg(rgb(theme.palette[3])),
-                                    )
-                                }),
+                            }),
                         )
                         .child(
                             svg()

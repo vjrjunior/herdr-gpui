@@ -160,8 +160,8 @@ pub(super) trait SidebarStyle {
     fn tree_color(&self, theme: &Theme) -> Rgba {
         rgb(theme.muted)
     }
-    fn uncommitted(&self, theme: &Theme, size: f32) -> Div {
-        crate::icons::uncommitted(theme, size)
+    fn uncommitted_on_branch(&self) -> bool {
+        false
     }
     fn header_case(&self) -> HeaderCase;
 }

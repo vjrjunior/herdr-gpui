@@ -167,6 +167,10 @@ impl RowBadge {
     pub(super) fn without_pr(self) -> Option<Self> {
         Self::new(None, self.dirty, self.teleported)
     }
+
+    fn without_dirty(self) -> Option<Self> {
+        Self::new(self.pr, false, self.teleported)
+    }
 }
 
 impl RowBadge {
@@ -359,6 +363,13 @@ pub(super) fn row(
     } else {
         name_color
     };
+    let on_branch = show_detail && look.style.uncommitted_on_branch();
+    let branch_dirty = on_branch && badge.as_ref().is_some_and(|badge| badge.dirty);
+    let badge = if on_branch {
+        badge.and_then(RowBadge::without_dirty)
+    } else {
+        badge
+    };
     let icon_reserve = match workspace_icon {
         RowIcon::None => 0.,
         _ => ICON_RESERVE,
@@ -411,6 +422,11 @@ pub(super) fn row(
     let agent_size = line_height(font).min(12.);
     let agent_reserve = agent_size + 4.;
     let name_reserve = icon_reserve + agent_first.map_or(0., |_| agent_reserve);
+    let detail_reserve = if agent_detail.is_some() || branch_dirty {
+        agent_reserve
+    } else {
+        0.
+    };
     let lines = [true, show_detail, !tokens.is_empty()]
         .into_iter()
         .filter(|&shown| shown)
@@ -528,17 +544,14 @@ pub(super) fn row(
                             .when_some(agent_detail, |line, icon| {
                                 line.child(agent_mark(key, icon, agent_size, detail_color, font))
                             })
+                            .when(branch_dirty, |line| {
+                                line.child(branch_mark(key, agent_size, detail_color, font, theme))
+                            })
                             .child(
                                 div()
                                     .debug_selector(|| format!("detail-{key}"))
-                                    .ml(px(if agent_detail.is_some() {
-                                        agent_reserve.min(label_width)
-                                    } else {
-                                        0.
-                                    }))
-                                    .w(px((label_width
-                                        - agent_detail.map_or(0., |_| agent_reserve))
-                                    .max(0.)))
+                                    .ml(px(detail_reserve.min(label_width)))
+                                    .w(px((label_width - detail_reserve).max(0.)))
                                     .truncate()
                                     .text_color(rgb(detail_color))
                                     .child(label_text(detail)),
@@ -608,12 +621,11 @@ pub(super) fn row(
                                 line.child(
                                     // Well under the line height, so marks on
                                     // neighbouring rows keep a visible gap.
-                                    look.style
-                                        .uncommitted(
-                                            theme,
-                                            (line_height(font) * 0.75).round().min(15.),
-                                        )
-                                        .debug_selector(|| format!("dirty-{key}")),
+                                    crate::icons::uncommitted(
+                                        theme,
+                                        (line_height(font) * 0.75).round().min(15.),
+                                    )
+                                    .debug_selector(|| format!("dirty-{key}")),
                                 )
                             })
                             .when_some(pr.as_ref(), |line, badge| {
@@ -712,6 +724,19 @@ fn agent_mark(
         .top(px((line_height(font) - size) / 2.))
         .size(px(size))
         .child(svg().path(icon.path()).size_full().text_color(rgb(color)))
+}
+
+fn branch_mark(key: &str, size: f32, color: u32, font: &FontConfig, theme: &Theme) -> Div {
+    let (icon, dot) = (
+        format!("branch-dirty-{key}"),
+        format!("branch-dirty-dot-{key}"),
+    );
+    crate::icons::branch(size, color)
+        .debug_selector(move || icon)
+        .absolute()
+        .left_0()
+        .top(px((line_height(font) - size) / 2.))
+        .child(crate::icons::branch_dot(theme, size).debug_selector(move || dot))
 }
 
 #[cfg(not(any(test, feature = "integration-test")))]
