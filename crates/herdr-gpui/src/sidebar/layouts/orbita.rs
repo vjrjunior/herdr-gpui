@@ -216,6 +216,7 @@ pub(in super::super) fn spaces_actions(theme: &Theme, cx: &mut Context<HerdrWind
 }
 
 const GUIDE_ALPHA: u32 = 0x40;
+const BLOCKED_BAR: f32 = 3.;
 
 impl SidebarMetrics {
     pub(in super::super) fn orbita(self) -> Self {
@@ -267,5 +268,29 @@ impl SidebarLook {
             RowLift::Resting => self.hover_group(row).child(layer),
             _ => row.child(layer),
         }
+    }
+
+    pub(in super::super) fn mark_blocked(
+        &self,
+        row: Div,
+        key: &str,
+        indent: f32,
+        color: u32,
+    ) -> Div {
+        if !self.density.orbita {
+            return row;
+        }
+        let edge = self.spacing() / 2. + self.density.radius / 2.;
+        row.child(
+            div()
+                .debug_selector(|| format!("blocked-{key}"))
+                .absolute()
+                .left(px(self.inset() + indent + 1.))
+                .top(px(edge))
+                .bottom(px(edge))
+                .w(px(BLOCKED_BAR))
+                .rounded(px(BLOCKED_BAR / 2.))
+                .bg(rgb(color)),
+        )
     }
 }

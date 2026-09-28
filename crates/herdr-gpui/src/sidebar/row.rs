@@ -435,6 +435,9 @@ pub(super) fn row(
         .cursor_pointer()
         .map(|row| cx.mark.apply(row, key, &look))
         .map(|row| look.mark_nested(row, key, state, indent, theme))
+        .when(status == AgentStatus::Blocked && !removing, |row| {
+            look.mark_blocked(row, key, indent, status_color)
+        })
         // Tree lines run in the indent the row already reserves, so a child is
         // tied to its parent without box-drawing glyphs in the label.
         .when(draw_tree, |row| {
