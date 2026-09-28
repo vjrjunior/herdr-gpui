@@ -709,7 +709,7 @@ fn token_line(
                 .rounded(px(crate::config::corners::SMALL))
                 .border_1()
                 .border_color(rgb(theme.active))
-                .text_size(px(font.size * 0.85))
+                .text_size(px(font.size * BADGE_TEXT))
                 .text_color(rgb(token_color(value, theme)))
                 .child(label_text(value))
         }))
@@ -748,13 +748,14 @@ fn detail_with_counts(
     font: &FontConfig,
 ) -> Div {
     let glyph = glyph_width(font);
-    let counts_width = glyph * (counts.chars().count() + 1) as f32;
+    let counts_width = glyph * BADGE_TEXT * (counts.chars().count() + 1) as f32;
     line.flex()
         .items_center()
         .gap(px(glyph))
         .overflow_hidden()
         .child(
             div()
+                .debug_selector(|| format!("detail-text-{key}"))
                 .flex_none()
                 .max_w(px((width - counts_width - glyph).max(0.)))
                 .truncate()
@@ -764,9 +765,12 @@ fn detail_with_counts(
             div()
                 .debug_selector(|| format!("ahead-behind-{key}"))
                 .flex_none()
+                .text_size(px(font.size * BADGE_TEXT))
                 .child(label_text(counts)),
         )
 }
+
+const BADGE_TEXT: f32 = 0.85;
 
 pub(super) fn ahead_behind_label((ahead, behind): (usize, usize)) -> Option<String> {
     let parts: Vec<String> = [(ahead, '\u{2191}'), (behind, '\u{2193}')]

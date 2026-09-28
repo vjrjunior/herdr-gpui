@@ -283,6 +283,19 @@ fn orbita_follows_the_branch_with_its_ahead_and_behind_counts(cx: &mut TestAppCo
     assert!(cx.debug_bounds("ahead-behind-agent-launcher").is_none());
 }
 
+#[gpui::test]
+fn ahead_and_behind_counts_use_the_badge_text_size(cx: &mut TestAppContext) {
+    let cx = draw_with(cx, LayoutMode::Orbita, 15., |data| {
+        let herdr = workspace(data, "main");
+        herdr.git_ahead_behind = Some((2, 1));
+        herdr.branch = Some("\u{2191}2 \u{2193}1".into());
+    });
+    let branch = bounds(cx, "detail-text-herdr").size.width;
+    let counts = bounds(cx, "ahead-behind-herdr").size.width;
+    let ratio = counts / branch;
+    assert!((ratio - 0.85).abs() < 0.05, "{ratio}");
+}
+
 #[test]
 fn ahead_and_behind_counts_show_only_what_moved() {
     use super::row::ahead_behind_label;
