@@ -371,7 +371,8 @@ pub(super) fn row(
     };
     let counts = ahead_behind
         .filter(|_| show_detail && matches!(kind, RowKind::Workspace) && !detail.is_empty())
-        .and_then(ahead_behind_label);
+        .map(drift)
+        .filter(|drift| !drift.is_empty());
     let icon_reserve = match workspace_icon {
         RowIcon::None => 0.,
         _ => ICON_RESERVE,
@@ -566,7 +567,7 @@ pub(super) fn row(
                                             key,
                                             (detail, counts),
                                             (label_width - detail_reserve).max(0.),
-                                            font,
+                                            (font, theme),
                                         ),
                                     }),
                             ),
@@ -743,12 +744,17 @@ fn agent_mark(
 fn detail_with_counts(
     line: Div,
     key: &str,
-    (detail, counts): (&str, &str),
+    (detail, counts): (&str, &[Drift]),
     width: f32,
-    font: &FontConfig,
+    (font, theme): (&FontConfig, &Theme),
 ) -> Div {
     let glyph = glyph_width(font);
-    let counts_width = glyph * BADGE_TEXT * (counts.chars().count() + 1) as f32;
+    let labels: Vec<(Drift, String)> = counts.iter().map(|&drift| (drift, drift.label())).collect();
+    let chars: usize = labels
+        .iter()
+        .map(|(_, label)| label.chars().count() + 1)
+        .sum();
+    let counts_width = glyph * BADGE_TEXT * chars as f32;
     line.flex()
         .items_center()
         .gap(px(glyph))
@@ -765,20 +771,58 @@ fn detail_with_counts(
             div()
                 .debug_selector(|| format!("ahead-behind-{key}"))
                 .flex_none()
+                .flex()
+                .gap(px(glyph * BADGE_TEXT))
                 .text_size(px(font.size * BADGE_TEXT))
-                .child(label_text(counts)),
+                .children(labels.into_iter().map(|(drift, label)| {
+                    let side = match drift {
+                        Drift::Ahead(_) => "ahead",
+                        Drift::Behind(_) => "behind",
+                    };
+                    div()
+                        .debug_selector(|| format!("{side}-{key}"))
+                        .flex_none()
+                        .text_color(rgb(drift.color(theme)))
+                        .child(label_text(&label))
+                })),
         )
 }
 
 const BADGE_TEXT: f32 = 0.85;
 
-pub(super) fn ahead_behind_label((ahead, behind): (usize, usize)) -> Option<String> {
-    let parts: Vec<String> = [(ahead, '\u{2191}'), (behind, '\u{2193}')]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum Drift {
+    Ahead(usize),
+    Behind(usize),
+}
+
+impl Drift {
+    fn count(self) -> usize {
+        match self {
+            Self::Ahead(count) | Self::Behind(count) => count,
+        }
+    }
+
+    pub(super) fn label(self) -> String {
+        match self {
+            Self::Ahead(count) => format!("\u{2191}{count}"),
+            Self::Behind(count) => format!("\u{2193}{count}"),
+        }
+    }
+
+    pub(super) fn color(self, theme: &Theme) -> u32 {
+        match self {
+            Self::Ahead(_) => theme.palette[2],
+            Self::Behind(_) => theme.palette[1],
+        }
+    }
+}
+
+pub(super) fn drift((ahead, behind): (usize, usize)) -> Vec<Drift> {
+    [Drift::Ahead(ahead), Drift::Behind(behind)]
         .into_iter()
-        .filter(|&(count, _)| count > 0)
-        .map(|(count, arrow)| format!("{arrow}{count}"))
-        .collect();
-    (!parts.is_empty()).then(|| parts.join(" "))
+        .filter(|drift| drift.count() > 0)
+        .collect()
 }
 
 const BLOCKED_BAR: f32 = 3.;

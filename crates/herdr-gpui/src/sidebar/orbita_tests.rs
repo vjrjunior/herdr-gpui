@@ -287,25 +287,45 @@ fn orbita_follows_the_branch_with_its_ahead_and_behind_counts(cx: &mut TestAppCo
 fn ahead_and_behind_counts_use_the_badge_text_size(cx: &mut TestAppContext) {
     let cx = draw_with(cx, LayoutMode::Orbita, 15., |data| {
         let herdr = workspace(data, "main");
-        herdr.git_ahead_behind = Some((2, 1));
-        herdr.branch = Some("\u{2191}2 \u{2193}1".into());
+        herdr.git_ahead_behind = Some((2, 0));
+        herdr.branch = Some("\u{2191}2".into());
     });
     let branch = bounds(cx, "detail-text-herdr").size.width;
-    let counts = bounds(cx, "ahead-behind-herdr").size.width;
-    let ratio = counts / branch;
+    let ahead = bounds(cx, "ahead-herdr").size.width;
+    let ratio = ahead / branch;
     assert!((ratio - 0.85).abs() < 0.05, "{ratio}");
+    assert!(cx.debug_bounds("behind-herdr").is_none());
+}
+
+#[gpui::test]
+fn ahead_and_behind_counts_are_separate_spans(cx: &mut TestAppContext) {
+    let cx = draw_with(cx, LayoutMode::Orbita, 15., |data| {
+        workspace(data, "main").git_ahead_behind = Some((2, 1));
+    });
+    let counts = bounds(cx, "ahead-behind-herdr");
+    let ahead = bounds(cx, "ahead-herdr");
+    let behind = bounds(cx, "behind-herdr");
+    assert!(ahead.right() < behind.left());
+    assert!(counts.contains(&ahead.center()) && counts.contains(&behind.center()));
 }
 
 #[test]
 fn ahead_and_behind_counts_show_only_what_moved() {
-    use super::row::ahead_behind_label;
-    assert_eq!(
-        ahead_behind_label((2, 1)).as_deref(),
-        Some("\u{2191}2 \u{2193}1")
-    );
-    assert_eq!(ahead_behind_label((3, 0)).as_deref(), Some("\u{2191}3"));
-    assert_eq!(ahead_behind_label((0, 4)).as_deref(), Some("\u{2193}4"));
-    assert_eq!(ahead_behind_label((0, 0)), None);
+    use super::row::{Drift, drift};
+    assert_eq!(drift((2, 1)), vec![Drift::Ahead(2), Drift::Behind(1)]);
+    assert_eq!(drift((3, 0)), vec![Drift::Ahead(3)]);
+    assert_eq!(drift((0, 4)), vec![Drift::Behind(4)]);
+    assert!(drift((0, 0)).is_empty());
+    assert_eq!(Drift::Ahead(2).label(), "\u{2191}2");
+    assert_eq!(Drift::Behind(1).label(), "\u{2193}1");
+}
+
+#[test]
+fn ahead_is_green_and_behind_is_red() {
+    use super::row::Drift;
+    let theme = Theme::default();
+    assert_eq!(Drift::Ahead(1).color(&theme), theme.palette[2]);
+    assert_eq!(Drift::Behind(1).color(&theme), theme.palette[1]);
 }
 
 #[gpui::test]
