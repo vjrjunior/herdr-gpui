@@ -684,9 +684,9 @@ spacing:
   differs from the name, and the pull request. Agents are single compact lines.
 - `minimal`: one line per row with only the status dot and the name, for narrow
   sidebars or long lists.
-- `orbita`: `comfortable-rounded` with a chevron to fold a repository, no
-  uncommitted-work mark on its rows, a bar in the blocked status color on rows
-  whose agent is waiting for you, tree guides tying worktrees to their repository, each child's highlight starting where its guide's tick ends, the
+- `orbita`: `comfortable-rounded` with square-cornered row highlights, a
+  chevron to fold a repository, no uncommitted-work mark on its rows, a bar in
+  the blocked status color on rows whose agent is waiting for you, tree guides tying worktrees to their repository, each child's highlight starting where its guide's tick ends, the
   `[sidebar_worktrees]` font on worktree rows, and a line of badges for values
   Herdr plugins report through workspace metadata
   (`herdr workspace report-metadata --token NAME=VALUE`), in the order the

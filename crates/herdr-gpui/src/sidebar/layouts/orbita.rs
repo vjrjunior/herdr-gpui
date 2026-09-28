@@ -223,6 +223,7 @@ impl SidebarMetrics {
     pub(in super::super) fn orbita(self) -> Self {
         Self {
             child_indent: self.child_indent + self.gap,
+            radius: 0.,
             tree_lines: true,
             orbita: true,
             ..self
