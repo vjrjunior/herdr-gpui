@@ -28,6 +28,10 @@ impl RowBadge {
         let counts = self.counts.filter(|counts| counts.local);
         Self::new(None, counts, self.dirty, self.teleported, self.noted)
     }
+
+    pub(in crate::sidebar) fn without_dirty(self) -> Option<Self> {
+        Self::new(self.pr, self.counts, false, self.teleported, self.noted)
+    }
 }
 
 impl RowBadge {
