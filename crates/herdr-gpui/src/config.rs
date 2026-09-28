@@ -513,6 +513,7 @@ struct Settings {
     confirm_close_workspace: Option<bool>,
     container: ContainerConfig,
     contrast: Contrast,
+    daemon_keybindings: BTreeMap<String, Binding>,
     daytona: DaytonaConfig,
     devices: BTreeMap<String, DeviceSettings>,
     edge_rail: Option<bool>,
@@ -814,6 +815,7 @@ impl Config {
             unknown_keys,
             ..Self::default()
         };
+        config.keybindings = settings.keymap(&base.keys)?;
         settings.github.client_id_with_override(None)?;
         settings.github.check_accounts()?;
         config.github = settings.github;
@@ -872,8 +874,6 @@ impl Config {
         config.language = settings.language.unwrap_or_default();
         config.sidebar_style = settings.sidebar.style()?;
         config.theme_overrides = settings.theme_overrides;
-        config.keybindings =
-            Keymap::with_overrides(&settings.keybindings, &settings.pane_keys, &base.keys)?;
         config.keybinding_overrides = settings.keybindings;
         config.pane_keys = settings.pane_keys;
         if settings.devices.len() > MAX_DEVICES {
