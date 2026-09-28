@@ -280,7 +280,9 @@ fn orbita_puts_new_and_menu_in_the_spaces_header(cx: &mut TestAppContext) {
     assert_eq!(header.right() - menu.right(), label.left() - header.left());
     cx.simulate_click(menu.center(), Default::default());
     cx.update(|window, cx| full_draw(window, cx).clear(cx));
-    assert!(bounds(cx, "menu-panel").top() >= menu.bottom());
+    let panel = bounds(cx, "menu-panel");
+    assert!(panel.top() >= menu.bottom());
+    assert_eq!(panel.right(), menu.right());
     assert!(cx.debug_bounds("menu-reload GUI config").is_some());
 }
 
@@ -332,7 +334,10 @@ fn herdr_layouts_keep_new_and_menu_in_the_footer(cx: &mut TestAppContext) {
         15.,
         None,
     );
-    assert!(cx.debug_bounds("sidebar-menu").is_some());
+    let menu = bounds(cx, "sidebar-menu");
     assert!(cx.debug_bounds("spaces-new").is_none());
     assert!(cx.debug_bounds("spaces-menu").is_none());
+    cx.simulate_click(menu.center(), Default::default());
+    cx.update(|window, cx| full_draw(window, cx).clear(cx));
+    assert_eq!(bounds(cx, "menu-panel").left(), px(56.));
 }

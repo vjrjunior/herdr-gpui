@@ -186,7 +186,9 @@ pub(in super::super) fn spaces_actions(theme: &Theme, cx: &mut Context<HerdrWind
                 )
                 .on_click(cx.listener(move |this, _: &ClickEvent, window, cx| {
                     if this.open_menu(window, cx) {
-                        this.menu.anchor = menu_bounds.get().bottom_left();
+                        let bounds = menu_bounds.get();
+                        this.menu.anchor = bounds.bottom_right();
+                        this.menu.right_edge = Some(bounds.right());
                     }
                 })),
         )

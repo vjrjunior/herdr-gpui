@@ -255,7 +255,10 @@ impl HerdrWindow {
                 .anchor
                 .x
                 .min((viewport.width - px(width + MENU_MARGIN)).max(px(0.))),
-            _ => px(56.),
+            _ => self
+                .menu
+                .right_edge
+                .map_or(px(56.), |right| (right - px(width)).max(px(MENU_MARGIN))),
         };
         let panel = panel
             .absolute()
