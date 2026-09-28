@@ -490,6 +490,27 @@ pub enum Error {
         first: &'static str,
         second: &'static str,
     },
+    #[error("daemon_keybindings: a daemon binding label must not be empty")]
+    EmptyDaemonBinding,
+    #[error("daemon_keybindings.{binding:?}: invalid keystroke {keystroke:?}")]
+    InvalidDaemonKeystroke {
+        binding: String,
+        keystroke: String,
+        #[source]
+        source: gpui::InvalidKeystrokeError,
+    },
+    #[error(
+        "daemon_keybindings.{binding:?}: {keystroke:?} needs a cmd, ctrl, alt, or fn modifier so typing still reaches the terminal"
+    )]
+    DaemonKeystrokeWithoutModifier { binding: String, keystroke: String },
+    #[error("daemon_keybindings.{0:?} must list at most 8 keystrokes")]
+    TooManyDaemonKeystrokes(String),
+    #[error("daemon_keybindings.{binding:?}: {keystroke:?} is already bound to {owner}")]
+    DaemonKeystrokeConflict {
+        keystroke: String,
+        binding: String,
+        owner: String,
+    },
     #[error("theme {name:?} not found in {directories:?}")]
     ThemeNotFound {
         name: String,
@@ -528,6 +549,8 @@ pub enum Error {
     UnsupportedCommand,
     #[error("This command changed or was removed. Reopen the palette.")]
     PaletteCommandChanged,
+    #[error("No Herdr command is bound to {0}.")]
+    UnboundDaemonCommand(String),
     #[error("The original tab no longer exists in its workspace. Reopen the palette.")]
     PaletteTabRemoved,
     #[error("The original pane no longer exists in its tab. Reopen the palette.")]

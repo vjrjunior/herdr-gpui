@@ -118,6 +118,21 @@ impl Target {
     }
 }
 
+fn bound_command<'a>(
+    snapshot: &'a ClientShellSnapshot,
+    binding: &str,
+) -> Result<(&'a str, ClientShellCommandAction)> {
+    snapshot
+        .commands
+        .iter()
+        .find(|command| {
+            command.binding_label == binding
+                || command.binding_labels.iter().any(|label| label == binding)
+        })
+        .map(|command| (command.command_id.as_str(), command.action))
+        .ok_or_else(|| Error::UnboundDaemonCommand(binding.to_owned()))
+}
+
 /// Whether a Go To destination listed from `boot` still exists in `snapshot`.
 fn destination_exists(
     snapshot: &ClientShellSnapshot,
@@ -408,6 +423,33 @@ impl HerdrWindow {
         palette.filter("");
         self.menu.palette = Some(palette);
         cx.notify();
+    }
+
+    pub(crate) fn run_daemon_binding(
+        &mut self,
+        binding: &str,
+        _window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.menu.page.is_some() {
+            return;
+        }
+        let Some(snapshot) = self.live.snapshot.clone() else {
+            return;
+        };
+        let result = bound_command(&snapshot, binding)
+            .and_then(|(id, action)| Target::capture(&snapshot).invocation(&snapshot, id, action));
+        match result {
+            Ok(params) => {
+                self.request_focus_change(Method::CommandInvoke.as_str(), None, |handle, boot| {
+                    handle.request(boot, Method::CommandInvoke, params)
+                });
+            }
+            Err(error) => {
+                self.local_error = Some(error.to_string());
+                cx.notify();
+            }
+        }
     }
 
     fn activate_palette(&mut self, action: Action, window: &mut Window, cx: &mut Context<Self>) {
@@ -759,6 +801,59 @@ mod tests {
             window.dispatch_keystroke(Keystroke::parse("cmd-alt-n").unwrap(), cx);
             assert!(view.read(cx).pending_navigation.is_none());
             assert_eq!(view.read(cx).endpoints[0].toasts.entries.len(), 1);
+        });
+    }
+
+    #[gpui::test]
+    fn a_gui_shortcut_invokes_the_daemon_command_bound_to_its_label(cx: &mut TestAppContext) {
+        let (view, cx) = cx.add_window_view(crate::sidebar::layout_tests::fixture_window);
+        cx.update(|window, cx| {
+            view.update(cx, |view, _| {
+                view.reconnect();
+                let client = herdr_client::connect(
+                    herdr_client::ConnectTarget::Socket("/unused-daemon-binding-test.sock".into()),
+                    view.options,
+                )
+                .unwrap();
+                client.handle.disconnect();
+                view.endpoints[0].connection.handle = Some(client.handle);
+                let mut snapshot = crate::sidebar::layout_tests::snapshot(2);
+                snapshot.commands = vec![ClientShellCommand {
+                    command_id: "cmd_2253-4_0".into(),
+                    action: ClientShellCommandAction::Shell,
+                    description: None,
+                    binding_label: "prefix+m".into(),
+                    binding_labels: vec!["prefix+m".into()],
+                }];
+                view.live.snapshot = Some(std::sync::Arc::new(snapshot));
+                view.last_queued_options = Some(view.options);
+                view.activation_deadline = None;
+            });
+            cx.bind_keys([KeyBinding::new(
+                "cmd-shift-m",
+                crate::actions::RunDaemonCommand {
+                    binding: "prefix+m".into(),
+                },
+                None,
+            )]);
+            window.focus(&view.read(cx).focus.clone(), cx);
+            window.draw(cx).clear(cx);
+            window.dispatch_keystroke(Keystroke::parse("cmd-shift-m").unwrap(), cx);
+            let error = view.read(cx).local_error.clone();
+            assert!(
+                error
+                    .as_deref()
+                    .is_some_and(|error| error.starts_with("command.invoke")),
+                "{error:?}"
+            );
+            view.update(cx, |view, cx| {
+                view.local_error = None;
+                view.run_daemon_binding("prefix+x", window, cx);
+                assert_eq!(
+                    view.local_error.as_deref(),
+                    Some("No Herdr command is bound to prefix+x.")
+                );
+            });
         });
     }
 

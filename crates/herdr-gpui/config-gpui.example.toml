@@ -117,6 +117,11 @@ layout = "normal"
 # quit = "cmd-q"
 # Unbound by default: themes, reconnect, logs, about.
 
+# Native shortcuts for Herdr's own bindings, keyed by the label the command
+# palette shows beside a daemon command ("Daemon bindings: prefix+m").
+# [daemon_keybindings]
+# "prefix+m" = "cmd-shift-m"
+
 # Preferences offers a searchable picker for all four families together or each row.
 # Platform default removes the local family override; fallback cascades remain active.
 [sidebar]

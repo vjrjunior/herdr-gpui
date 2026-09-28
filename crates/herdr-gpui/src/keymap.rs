@@ -76,6 +76,7 @@ pub struct Keymap {
     shortcuts: Vec<Vec<Shortcut>>,
     /// The keystroke that starts a chord, unless nothing can use it.
     prefix: Option<Keystroke>,
+    daemon: Vec<(String, Vec<String>)>,
 }
 
 impl Default for Keymap {
@@ -91,13 +92,23 @@ impl Default for Keymap {
 }
 
 impl Keymap {
+    #[cfg(test)]
+    pub(crate) fn with_overrides(
+        overrides: &BTreeMap<String, Binding>,
+        keys: &DaemonKeys,
+    ) -> Result<Self> {
+        Self::with_daemon_bindings(overrides, &BTreeMap::new(), keys)
+    }
+
     /// Layers the daemon's `keys` and then `overrides` over the defaults. A
     /// keystroke the GUI config assigns moves to that command, so rebinding
     /// one key never requires unbinding its default or daemon owner too; two
     /// configured commands claiming it is an error. A command the GUI config
     /// names keeps exactly the keystrokes listed there.
-    pub(crate) fn with_overrides(
+    // Keyed by binding label: the daemon reissues command ids on every boot.
+    pub(crate) fn with_daemon_bindings(
         overrides: &BTreeMap<String, Binding>,
+        bindings: &BTreeMap<String, Binding>,
         keys: &DaemonKeys,
     ) -> Result<Self> {
         let mut configured = vec![None; COMMANDS.len()];
@@ -128,7 +139,65 @@ impl Keymap {
                 }
             }
         }
-        Ok(Self::layer(configured, &claimed, keys))
+        let mut native: HashMap<(Modifiers, String), String> = claimed
+            .iter()
+            .map(|(keystroke, name)| (keystroke.clone(), (*name).to_owned()))
+            .collect();
+        for (info, configured) in COMMANDS.iter().zip(&configured) {
+            if configured.is_some() {
+                continue;
+            }
+            for parsed in info
+                .shortcuts
+                .iter()
+                .filter_map(|shortcut| Keystroke::parse(shortcut).ok())
+            {
+                native
+                    .entry(identity(&parsed))
+                    .or_insert_with(|| info.name.to_owned());
+            }
+        }
+        let mut daemon = Vec::new();
+        for (label, binding) in bindings {
+            let label = label.trim();
+            if label.is_empty() {
+                return Err(Error::EmptyDaemonBinding);
+            }
+            let keystrokes: Vec<String> = binding.keystrokes().map(str::to_owned).collect();
+            if keystrokes.len() > MAX_KEYSTROKES {
+                return Err(Error::TooManyDaemonKeystrokes(label.to_owned()));
+            }
+            let owner = format!("daemon_keybindings.{label}");
+            for keystroke in &keystrokes {
+                let parsed = parse_daemon(label, keystroke)?;
+                match native.get(&identity(&parsed)) {
+                    Some(first) if *first != owner => {
+                        return Err(Error::DaemonKeystrokeConflict {
+                            keystroke: keystroke.clone(),
+                            binding: label.to_owned(),
+                            owner: first.clone(),
+                        });
+                    }
+                    Some(_) => {}
+                    None => {
+                        native.insert(identity(&parsed), owner.clone());
+                    }
+                }
+                claimed.insert(identity(&parsed), "daemon_keybindings");
+            }
+            daemon.push((label.to_owned(), keystrokes));
+        }
+        let mut keymap = Self::layer(configured, &claimed, keys);
+        keymap.daemon = daemon;
+        Ok(keymap)
+    }
+
+    pub fn daemon_bindings(&self) -> impl Iterator<Item = (&str, &str)> {
+        self.daemon.iter().flat_map(|(label, keystrokes)| {
+            keystrokes
+                .iter()
+                .map(move |keystroke| (label.as_str(), keystroke.as_str()))
+        })
     }
 
     /// Herdr owns and validates its own file, so a daemon binding this client
@@ -192,7 +261,11 @@ impl Keymap {
                     .collect(),
             })
             .collect();
-        Self { shortcuts, prefix }
+        Self {
+            shortcuts,
+            prefix,
+            daemon: Vec::new(),
+        }
     }
 
     /// Every shortcut bound to `command`, primary first. A prefix chord reads
@@ -288,6 +361,21 @@ fn parse(command: &'static str, keystroke: &str) -> Result<Keystroke> {
     if !has_modifier(&parsed) {
         return Err(Error::KeystrokeWithoutModifier {
             command,
+            keystroke: keystroke.to_owned(),
+        });
+    }
+    Ok(parsed)
+}
+
+fn parse_daemon(binding: &str, keystroke: &str) -> Result<Keystroke> {
+    let parsed = Keystroke::parse(keystroke).map_err(|source| Error::InvalidDaemonKeystroke {
+        binding: binding.to_owned(),
+        keystroke: keystroke.to_owned(),
+        source,
+    })?;
+    if !has_modifier(&parsed) {
+        return Err(Error::DaemonKeystrokeWithoutModifier {
+            binding: binding.to_owned(),
             keystroke: keystroke.to_owned(),
         });
     }
@@ -549,5 +637,78 @@ mod tests {
             assert_eq!(keymap.is_prefix(&keystroke(prefix)), usable, "{prefix}");
             assert_eq!(keymap.chord(&keystroke("c")).is_some(), usable, "{prefix}");
         }
+    }
+
+    #[test]
+    fn daemon_bindings_parse_and_reject_conflicts() {
+        let daemon = |entries: &[(&str, Binding)]| {
+            Keymap::with_daemon_bindings(
+                &BTreeMap::new(),
+                &overrides(entries),
+                &DaemonKeys::default(),
+            )
+        };
+        let keymap = daemon(&[(
+            "prefix+m",
+            Binding::Many(vec!["cmd-shift-m".into(), "ctrl-alt-m".into()]),
+        )])
+        .unwrap();
+        assert_eq!(
+            keymap.daemon_bindings().collect::<Vec<_>>(),
+            [("prefix+m", "cmd-shift-m"), ("prefix+m", "ctrl-alt-m")]
+        );
+        assert!(Keymap::default().daemon_bindings().next().is_none());
+        assert!(matches!(
+            daemon(&[("prefix+m", one("m"))]),
+            Err(Error::DaemonKeystrokeWithoutModifier { .. })
+        ));
+        assert!(matches!(
+            daemon(&[("prefix+m", one("cmd-t"))]),
+            Err(Error::DaemonKeystrokeConflict { .. })
+        ));
+        assert!(matches!(
+            daemon(&[("prefix+m", one("cmd-k")), ("prefix+g", one("cmd-k"))]),
+            Err(Error::DaemonKeystrokeConflict { .. })
+        ));
+        assert!(matches!(
+            daemon(&[(" ", one("cmd-shift-m"))]),
+            Err(Error::EmptyDaemonBinding)
+        ));
+        assert!(matches!(
+            daemon(&[("prefix+m", Binding::Many(vec!["cmd-shift-m".into(); 9]))]),
+            Err(Error::TooManyDaemonKeystrokes(_))
+        ));
+        assert!(matches!(
+            daemon(&[("prefix+m", one("cmd-n-t"))]),
+            Err(Error::InvalidDaemonKeystroke { .. })
+        ));
+    }
+
+    #[test]
+    fn daemon_keys_and_their_prefix_yield_to_daemon_bindings() {
+        let keys = DaemonKeys {
+            prefix: keystroke("ctrl-b"),
+            bindings: vec![
+                (Command::Tab, Trigger::Direct(keystroke("alt-m"))),
+                (Command::SplitRight, Trigger::Prefixed(keystroke("v"))),
+            ],
+        };
+        let keymap = Keymap::with_daemon_bindings(
+            &BTreeMap::new(),
+            &overrides(&[(
+                "prefix+m",
+                Binding::Many(vec!["alt-m".into(), "ctrl-b".into()]),
+            )]),
+            &keys,
+        )
+        .unwrap();
+        assert_eq!(
+            keymap.daemon_bindings().collect::<Vec<_>>(),
+            [("prefix+m", "alt-m"), ("prefix+m", "ctrl-b")]
+        );
+        assert_eq!(list(&keymap, Command::Tab), ["cmd-t"]);
+        assert_eq!(list(&keymap, Command::SplitRight), ["cmd-d"]);
+        assert!(!keymap.is_prefix(&keystroke("ctrl-b")));
+        assert_eq!(keymap.chord(&keystroke("v")), None);
     }
 }

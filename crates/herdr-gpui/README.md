@@ -1502,6 +1502,17 @@ Windows setup) nothing is saved and the window says so.
   prefix. Herdr validates its own file, so a daemon entry the GUI cannot
   express (a `hyper` modifier, a direct key without cmd, ctrl, alt, or fn) is
   skipped rather than rejected. Saving either file rebinds live.
+- Commands the daemon runs itself, such as a `[[keys.command]]` on
+  `prefix+m`, have no GUI command, so the prefix drops their chord here; the
+  palette lists them as `Daemon bindings`. `[daemon_keybindings]` gives one a
+  native shortcut, keyed by the binding label the palette shows:
+  `"prefix+m" = "cmd-shift-m"` runs the daemon command bound to `prefix+m` for
+  the focused workspace, tab, and pane, exactly as choosing it in the palette
+  does. The label, not the command id, is the key because the daemon issues new
+  ids every time it starts. The same keystroke rules apply: a key that a native
+  shortcut or `[keybindings]` keeps is rejected, while one held by the daemon's
+  `[keys]` or its prefix moves to the binding, as a `[keybindings]` keystroke
+  does. A label no daemon command carries reports that nothing is bound to it.
 - Cmd-B toggles sidebar visibility locally without changing daemon state.
   Cmd-, opens Settings; Cmd-/ opens the grouped native shortcut reference.
   Native shortcut labels and keycaps come from the shared `controls::COMMANDS`

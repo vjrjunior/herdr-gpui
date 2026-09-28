@@ -58,6 +58,12 @@ pub(crate) struct RunCommand {
     pub(crate) command: Command,
 }
 
+#[derive(Clone, PartialEq, serde::Deserialize, Action)]
+#[action(no_json)]
+pub(crate) struct RunDaemonCommand {
+    pub(crate) binding: String,
+}
+
 /// Picks the sidebar layout, from View > Layout.
 #[derive(Clone, PartialEq, serde::Deserialize, Action)]
 #[action(no_json)]
@@ -91,6 +97,15 @@ pub(crate) fn bind_keys(cx: &mut App) {
         } else {
             KeyBinding::new(keystroke, RunCommand { command }, None)
         }
+    }));
+    cx.bind_keys(keymap.daemon_bindings().map(|(binding, keystroke)| {
+        KeyBinding::new(
+            keystroke,
+            RunDaemonCommand {
+                binding: binding.to_owned(),
+            },
+            None,
+        )
     }));
     cx.bind_keys(crate::log_window::key_bindings());
     cx.bind_keys(crate::settings_window::key_bindings());

@@ -774,6 +774,7 @@ struct Settings {
     layout: Layout,
     theme_overrides: ThemeOverrides,
     keybindings: std::collections::BTreeMap<String, Binding>,
+    daemon_keybindings: std::collections::BTreeMap<String, Binding>,
 }
 
 /// Each key overrides the daemon's answer on its own, so naming one of them
@@ -1229,7 +1230,11 @@ impl Config {
         }
         config.layout = settings.layout;
         config.theme_overrides = settings.theme_overrides;
-        config.keybindings = Keymap::with_overrides(&settings.keybindings, &base.keys)?;
+        config.keybindings = Keymap::with_daemon_bindings(
+            &settings.keybindings,
+            &settings.daemon_keybindings,
+            &base.keys,
+        )?;
         if let Some(theme) = settings.theme {
             if theme.trim().is_empty() {
                 return Err(Error::EmptyTheme);
@@ -3312,6 +3317,26 @@ mod tests {
         fs::write(&local, "")?;
         fs::write(&daemon, "[keys\nprefix = ")?;
         assert_eq!(shortcuts(&load()?, Command::Tab), ["cmd-t", "ctrl-b c"]);
+        Ok(())
+    }
+
+    #[test]
+    fn daemon_keybindings_bind_gui_keys_to_daemon_bindings() -> anyhow::Result<()> {
+        let config = Config::parse("[daemon_keybindings]\n\"prefix+m\" = \"cmd-shift-m\"")?;
+        assert_eq!(
+            config.keybindings.daemon_bindings().collect::<Vec<_>>(),
+            [("prefix+m", "cmd-shift-m")]
+        );
+        assert!(matches!(
+            Config::parse("[daemon_keybindings]\n\"prefix+m\" = \"cmd-t\""),
+            Err(Error::DaemonKeystrokeConflict { .. })
+        ));
+        assert!(matches!(
+            Config::parse(
+                "[keybindings]\nnew_tab = \"cmd-shift-m\"\n[daemon_keybindings]\n\"prefix+m\" = \"cmd-shift-m\""
+            ),
+            Err(Error::DaemonKeystrokeConflict { .. })
+        ));
         Ok(())
     }
 
