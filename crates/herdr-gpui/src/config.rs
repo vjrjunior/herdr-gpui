@@ -57,10 +57,12 @@ const MANAGED_HEADER: &str = "# DO NOT EDIT -- WILL BE OVERWRITTEN";
 const LOCAL_CONFIG: &str = "# Herdr GPUI overrides. Saved changes reload automatically.\n# Unset keys inherit config-gpui.toml; tables merge key by key.\n\n# New installs start with the roomy rounded sidebar. Remove this line for\n# the managed default, or pick another layout listed in config-gpui.toml.\nlayout = \"comfortable-rounded\"\n";
 
 /// Shared logical-pixel radii for native-style chrome, independent of the
-/// terminal grid. Small badges/keycaps retain a tighter curve than controls.
+/// terminal grid. Panels and controls are square; small badges/keycaps keep a
+/// slight curve.
 pub(crate) mod corners {
-    pub(crate) const PANEL: f32 = 12.;
-    pub(crate) const CONTROL: f32 = 8.;
+    pub(crate) const PANEL: f32 = 0.;
+    pub(crate) const CONTROL: f32 = 0.;
+    pub(crate) const ROW: f32 = 8.;
     pub(crate) const SMALL: f32 = 4.;
 }
 

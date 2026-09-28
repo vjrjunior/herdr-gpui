@@ -163,7 +163,7 @@ impl SidebarMetrics {
             inset: self.gap,
             spacing: 2. * trim,
             style_padding: trim,
-            radius: crate::config::corners::CONTROL,
+            radius: crate::config::corners::ROW,
             highlight: Highlight::Outline,
             tree_lines: false,
             header_case: HeaderCase::Title,

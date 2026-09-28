@@ -694,7 +694,9 @@ spacing:
   yellow, and a reported `pr` token replaces the native pull request number.
   The title bar's Git control marks uncommitted work with a yellow dot on its
   branch icon instead of the boxed pencil, and the `new` and `menu` footer
-  moves into the Spaces header as a plus and a hamburger icon.
+  moves into the Spaces header as a plus and a hamburger icon. This fork also
+  draws menus, dialogs, notifications, buttons, and fields with square corners
+  in every layout; badges, keycaps, and Herdr's rounded layouts keep theirs.
   Rows configured through `[ui.sidebar.spaces]` place those values with `$name`
   tokens instead, so the badge line shows only on native rows: with no
   configured rows, or with `[usage] inline = false`.
