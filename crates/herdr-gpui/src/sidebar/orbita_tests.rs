@@ -244,26 +244,14 @@ fn orbita_icons_load_and_render(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
-fn orbita_leads_every_branch_line_with_a_branch_icon(cx: &mut TestAppContext) {
+fn orbita_rows_draw_no_uncommitted_mark(cx: &mut TestAppContext) {
     let cx = draw(cx, LayoutMode::Orbita, 15., None);
-    let name = bounds(cx, "name-herdr");
-    let detail = bounds(cx, "detail-herdr");
-    let icon = bounds(cx, "branch-herdr");
-    assert!(icon.top() >= name.bottom());
-    assert!(icon.right() <= detail.left());
-    assert!((icon.center().y - detail.center().y).abs() <= px(0.5));
-    assert!(cx.debug_bounds("branch-dirty-herdr").is_none());
-    assert!(cx.debug_bounds("branch-sidebar-child").is_some());
-}
-
-#[gpui::test]
-fn orbita_colors_the_branch_icon_for_uncommitted_work(cx: &mut TestAppContext) {
-    let cx = draw(cx, LayoutMode::Orbita, 15., None);
-    let icon = bounds(cx, "branch-dirty-agent-launcher");
+    let column = bounds(cx, "column-agent-launcher");
     let detail = bounds(cx, "detail-agent-launcher");
-    assert!(icon.right() <= detail.left());
-    assert!(cx.debug_bounds("branch-agent-launcher").is_none());
+    assert_eq!(detail.left(), column.left());
     assert!(cx.debug_bounds("dirty-agent-launcher").is_none());
+    assert!(cx.debug_bounds("branch-dirty-agent-launcher").is_none());
+    assert!(cx.debug_bounds("branch-herdr").is_none());
     assert!(
         cx.debug_bounds("pr-agent-launcher").is_none(),
         "a dirty row without a pull request reserves no badge column"
@@ -284,7 +272,7 @@ fn orbita_follows_the_branch_with_its_ahead_and_behind_counts(cx: &mut TestAppCo
     let detail = bounds(cx, "detail-herdr");
     let counts = bounds(cx, "ahead-behind-herdr");
     assert!(detail.contains(&counts.center()));
-    assert!(counts.left() > bounds(cx, "branch-herdr").right());
+    assert!(counts.left() > detail.left());
     let column = bounds(cx, "column-sidebar-child-with-a-long-readable-branch-name");
     let counts = bounds(
         cx,

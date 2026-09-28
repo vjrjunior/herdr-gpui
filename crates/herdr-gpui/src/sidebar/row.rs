@@ -364,18 +364,13 @@ pub(super) fn row(
     } else {
         name_color
     };
-    let branch_line = show_detail
-        && matches!(kind, RowKind::Workspace)
-        && !detail.is_empty()
-        && look.style.branch_icon();
-    let dirty = badge.as_ref().is_some_and(|badge| badge.dirty);
-    let badge = if branch_line {
-        badge.and_then(RowBadge::without_dirty)
-    } else {
+    let badge = if look.style.marks_uncommitted() {
         badge
+    } else {
+        badge.and_then(RowBadge::without_dirty)
     };
     let counts = ahead_behind
-        .filter(|_| branch_line)
+        .filter(|_| show_detail && matches!(kind, RowKind::Workspace) && !detail.is_empty())
         .and_then(ahead_behind_label);
     let icon_reserve = match workspace_icon {
         RowIcon::None => 0.,
@@ -429,11 +424,7 @@ pub(super) fn row(
     let agent_size = line_height(font).min(12.);
     let agent_reserve = agent_size + 4.;
     let name_reserve = icon_reserve + agent_first.map_or(0., |_| agent_reserve);
-    let detail_reserve = if agent_detail.is_some() || branch_line {
-        agent_reserve
-    } else {
-        0.
-    };
+    let detail_reserve = agent_detail.map_or(0., |_| agent_reserve);
     let lines = [true, show_detail, !tokens.is_empty()]
         .into_iter()
         .filter(|&shown| shown)
@@ -561,14 +552,6 @@ pub(super) fn row(
                             .h(px(line_height(font)))
                             .when_some(agent_detail, |line, icon| {
                                 line.child(agent_mark(key, icon, agent_size, detail_color, font))
-                            })
-                            .when(branch_line, |line| {
-                                let color = if dirty {
-                                    theme.palette[3]
-                                } else {
-                                    detail_color
-                                };
-                                line.child(branch_mark(key, dirty, agent_size, color, font))
                             })
                             .child(
                                 div()
@@ -755,19 +738,6 @@ fn agent_mark(
         .top(px((line_height(font) - size) / 2.))
         .size(px(size))
         .child(svg().path(icon.path()).size_full().text_color(rgb(color)))
-}
-
-fn branch_mark(key: &str, dirty: bool, size: f32, color: u32, font: &FontConfig) -> Div {
-    let selector = if dirty {
-        format!("branch-dirty-{key}")
-    } else {
-        format!("branch-{key}")
-    };
-    crate::icons::branch(size, color)
-        .debug_selector(move || selector)
-        .absolute()
-        .left_0()
-        .top(px((line_height(font) - size) / 2.))
 }
 
 fn detail_with_counts(

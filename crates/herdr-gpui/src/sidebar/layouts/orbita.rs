@@ -223,8 +223,8 @@ impl SidebarStyle for OrbitaRounded {
     fn tree_color(&self, theme: &Theme) -> Rgba {
         outline_border(theme)
     }
-    fn branch_icon(&self) -> bool {
-        true
+    fn marks_uncommitted(&self) -> bool {
+        false
     }
     fn marks_blocked(&self) -> bool {
         true

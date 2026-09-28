@@ -486,10 +486,10 @@ spacing:
   differs from the name, and the pull request. Agents are single compact lines.
 - `minimal`: one line per row with only the status dot and the name, for narrow
   sidebars or long lists.
-- `orbita`: `comfortable-rounded` with a chevron to fold a repository, a branch
-  icon before each branch, yellow while the checkout has uncommitted work, the
-  branch's ahead and behind counts after it (`↑2 ↓1`), a bar in the blocked
-  status color on rows whose agent is waiting for you, tree guides tying worktrees to their repository, each child's highlight starting where its guide's tick ends, the
+- `orbita`: `comfortable-rounded` with a chevron to fold a repository, the
+  branch's ahead and behind counts after it (`↑2 ↓1`), no uncommitted-work
+  mark on its rows, a bar in the blocked status color on rows whose agent is
+  waiting for you, tree guides tying worktrees to their repository, each child's highlight starting where its guide's tick ends, the
   `[sidebar_worktrees]` font on worktree rows, and a line of badges for values
   Herdr plugins report through workspace metadata
   (`herdr workspace report-metadata --token NAME=VALUE`), in the order the
@@ -497,7 +497,10 @@ spacing:
   yellow, and a reported `pr` token replaces the native pull request number.
   The title bar's Git control marks uncommitted work with a yellow dot on its
   branch icon instead of the boxed pencil, and the `new` and `menu` footer
-  moves into the Spaces header as a plus and a hamburger icon.
+  moves into the Spaces header as a plus and a hamburger icon. The daemon only
+  computes ahead and behind counts while Herdr's own `[ui.sidebar.spaces]`
+  `rows` include the `git_status` token, as its default rows do; a config
+  that drops it leaves the counts empty in every client.
 
 New installs start with `comfortable-rounded`: the first launch writes it into
 the new `config-gpui.local.toml`. Existing override files and migrated personal
