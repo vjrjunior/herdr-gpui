@@ -51,6 +51,7 @@ impl RowLayout for Herdr {
             badge,
             None,
             &[],
+            None,
             cx.look,
             (cx.font, cx.theme),
         )
@@ -75,6 +76,7 @@ impl RowLayout for Herdr {
             None,
             agent.status_text,
             &[],
+            None,
             cx.look,
             (cx.font, cx.theme),
         )

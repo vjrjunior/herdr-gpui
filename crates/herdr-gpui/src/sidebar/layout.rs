@@ -160,7 +160,10 @@ pub(super) trait SidebarStyle {
     fn tree_color(&self, theme: &Theme) -> Rgba {
         rgb(theme.muted)
     }
-    fn uncommitted_on_branch(&self) -> bool {
+    fn branch_icon(&self) -> bool {
+        false
+    }
+    fn marks_blocked(&self) -> bool {
         false
     }
     fn header_actions(&self) -> bool {

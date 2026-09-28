@@ -3,6 +3,7 @@
 use super::layout_tests::{REPO_KEY, fixture_window, full_draw, snapshot};
 use crate::config::{Density, LayoutMode, Style, Theme};
 use gpui::{Bounds, Pixels, TestAppContext, VisualTestContext, px, size};
+use herdr_client::protocol::{AgentStatus, ClientShellSnapshot, ClientShellWorkspace};
 use std::sync::Arc;
 
 type Tokens = Vec<(String, String)>;
@@ -13,17 +14,30 @@ fn draw(
     worktree_size: f32,
     tokens: Option<Tokens>,
 ) -> &mut VisualTestContext {
+    draw_with(cx, mode, worktree_size, move |data| {
+        if let Some(tokens) = tokens {
+            workspace(data, "worktree/sidebar-child").tokens = tokens;
+        }
+    })
+}
+
+fn workspace<'a>(data: &'a mut ClientShellSnapshot, branch: &str) -> &'a mut ClientShellWorkspace {
+    data.workspaces
+        .iter_mut()
+        .find(|w| w.branch.as_deref() == Some(branch))
+        .unwrap()
+}
+
+fn draw_with(
+    cx: &mut TestAppContext,
+    mode: LayoutMode,
+    worktree_size: f32,
+    edit: impl FnOnce(&mut ClientShellSnapshot) + 'static,
+) -> &mut VisualTestContext {
     let (_, cx) = cx.add_window_view(move |window, cx| {
         let mut view = fixture_window(window, cx);
         let mut data = snapshot(6);
-        if let Some(tokens) = tokens {
-            let child = data
-                .workspaces
-                .iter_mut()
-                .find(|w| w.branch.as_deref() == Some("worktree/sidebar-child"))
-                .unwrap();
-            child.tokens = tokens;
-        }
+        edit(&mut data);
         view.live.snapshot = Some(Arc::new(data));
         view.menu.pr_cache.seed(
             crate::pull_request::Input {
@@ -230,25 +244,95 @@ fn orbita_icons_load_and_render(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
-fn orbita_marks_uncommitted_work_on_the_branch_line(cx: &mut TestAppContext) {
+fn orbita_leads_every_branch_line_with_a_branch_icon(cx: &mut TestAppContext) {
     let cx = draw(cx, LayoutMode::Orbita, 15., None);
-    let name = bounds(cx, "name-agent-launcher");
-    let detail = bounds(cx, "detail-agent-launcher");
+    let name = bounds(cx, "name-herdr");
+    let detail = bounds(cx, "detail-herdr");
+    let icon = bounds(cx, "branch-herdr");
+    assert!(icon.top() >= name.bottom());
+    assert!(icon.right() <= detail.left());
+    assert!((icon.center().y - detail.center().y).abs() <= px(0.5));
+    assert!(cx.debug_bounds("branch-dirty-herdr").is_none());
+    assert!(cx.debug_bounds("branch-sidebar-child").is_some());
+}
+
+#[gpui::test]
+fn orbita_colors_the_branch_icon_for_uncommitted_work(cx: &mut TestAppContext) {
+    let cx = draw(cx, LayoutMode::Orbita, 15., None);
     let icon = bounds(cx, "branch-dirty-agent-launcher");
-    let dot = bounds(cx, "branch-dirty-dot-agent-launcher");
+    let detail = bounds(cx, "detail-agent-launcher");
+    assert!(icon.right() <= detail.left());
+    assert!(cx.debug_bounds("branch-agent-launcher").is_none());
     assert!(cx.debug_bounds("dirty-agent-launcher").is_none());
     assert!(
         cx.debug_bounds("pr-agent-launcher").is_none(),
         "a dirty row without a pull request reserves no badge column"
     );
-    assert!(icon.top() >= name.bottom());
-    assert!(icon.right() <= detail.left());
-    assert!((icon.center().y - detail.center().y).abs() <= px(0.5));
-    assert_eq!(dot.size, size(px(5.), px(5.)));
-    assert!(icon.contains(&dot.center()));
-    assert!(dot.center().x > icon.center().x && dot.center().y < icon.center().y);
-    assert!(cx.debug_bounds("branch-dirty-herdr").is_none());
-    assert!(cx.debug_bounds("detail-herdr").is_some());
+}
+
+#[gpui::test]
+fn orbita_follows_the_branch_with_its_ahead_and_behind_counts(cx: &mut TestAppContext) {
+    let cx = draw_with(cx, LayoutMode::Orbita, 15., |data| {
+        workspace(data, "main").git_ahead_behind = Some((2, 1));
+        workspace(
+            data,
+            "worktree/sidebar-child-with-a-long-readable-branch-name",
+        )
+        .git_ahead_behind = Some((12, 0));
+        workspace(data, "develop").git_ahead_behind = Some((0, 0));
+    });
+    let detail = bounds(cx, "detail-herdr");
+    let counts = bounds(cx, "ahead-behind-herdr");
+    assert!(detail.contains(&counts.center()));
+    assert!(counts.left() > bounds(cx, "branch-herdr").right());
+    let column = bounds(cx, "column-sidebar-child-with-a-long-readable-branch-name");
+    let counts = bounds(
+        cx,
+        "ahead-behind-sidebar-child-with-a-long-readable-branch-name",
+    );
+    assert!(counts.right() <= column.right());
+    assert!(counts.size.width > px(0.));
+    assert!(cx.debug_bounds("ahead-behind-agent-launcher").is_none());
+}
+
+#[test]
+fn ahead_and_behind_counts_show_only_what_moved() {
+    use super::row::ahead_behind_label;
+    assert_eq!(
+        ahead_behind_label((2, 1)).as_deref(),
+        Some("\u{2191}2 \u{2193}1")
+    );
+    assert_eq!(ahead_behind_label((3, 0)).as_deref(), Some("\u{2191}3"));
+    assert_eq!(ahead_behind_label((0, 4)).as_deref(), Some("\u{2193}4"));
+    assert_eq!(ahead_behind_label((0, 0)), None);
+}
+
+#[gpui::test]
+fn orbita_marks_a_blocked_row_with_a_bar(cx: &mut TestAppContext) {
+    let cx = draw_with(cx, LayoutMode::Orbita, 15., |data| {
+        workspace(data, "main").agent_status = AgentStatus::Blocked;
+        workspace(data, "worktree/sidebar-child").agent_status = AgentStatus::Blocked;
+        workspace(data, "develop").agent_status = AgentStatus::Idle;
+    });
+    for (key, row, bar, highlight) in [
+        ("herdr", "row-herdr", "blocked-herdr", "highlight-herdr"),
+        (
+            "sidebar-child",
+            "row-sidebar-child",
+            "blocked-sidebar-child",
+            "highlight-sidebar-child",
+        ),
+    ] {
+        let row = bounds(cx, row);
+        let bar = bounds(cx, bar);
+        let highlight = bounds(cx, highlight);
+        assert_eq!(bar.size.width, px(3.), "{key}");
+        assert!(highlight.contains(&bar.center()), "{key}");
+        assert!(bar.left() - highlight.left() <= px(3.), "{key}");
+        assert!(bar.size.height >= row.size.height / 2., "{key}");
+    }
+    assert!(cx.debug_bounds("blocked-agent-launcher").is_none());
+    assert!(cx.debug_bounds("blocked-another workspace").is_none());
 }
 
 #[gpui::test]
@@ -261,6 +345,23 @@ fn herdr_layouts_keep_the_uncommitted_pencil(cx: &mut TestAppContext) {
     );
     assert!(cx.debug_bounds("dirty-agent-launcher").is_some());
     assert!(cx.debug_bounds("branch-dirty-agent-launcher").is_none());
+    assert!(cx.debug_bounds("branch-herdr").is_none());
+}
+
+#[gpui::test]
+fn herdr_layouts_show_no_counts_or_blocked_bar(cx: &mut TestAppContext) {
+    let cx = draw_with(
+        cx,
+        LayoutMode::new(Density::Comfortable, Style::Rounded),
+        15.,
+        |data| {
+            let herdr = workspace(data, "main");
+            herdr.git_ahead_behind = Some((2, 1));
+            herdr.agent_status = AgentStatus::Blocked;
+        },
+    );
+    assert!(cx.debug_bounds("ahead-behind-herdr").is_none());
+    assert!(cx.debug_bounds("blocked-herdr").is_none());
 }
 
 #[gpui::test]

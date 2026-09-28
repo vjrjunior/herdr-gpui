@@ -65,6 +65,7 @@ impl RowLayout for Orbita {
             badge,
             None,
             tokens,
+            workspace.git_ahead_behind,
             cx.look,
             (font, cx.theme),
         )
@@ -89,6 +90,7 @@ impl RowLayout for Orbita {
             None,
             agent.status_text,
             &[],
+            None,
             cx.look,
             (cx.font, cx.theme),
         )
@@ -221,7 +223,10 @@ impl SidebarStyle for OrbitaRounded {
     fn tree_color(&self, theme: &Theme) -> Rgba {
         outline_border(theme)
     }
-    fn uncommitted_on_branch(&self) -> bool {
+    fn branch_icon(&self) -> bool {
+        true
+    }
+    fn marks_blocked(&self) -> bool {
         true
     }
     fn header_actions(&self) -> bool {

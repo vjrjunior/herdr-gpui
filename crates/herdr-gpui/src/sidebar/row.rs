@@ -339,6 +339,7 @@ pub(super) fn row(
     // color so a status reads at a glance, not only by hue.
     status_text: Option<&'static str>,
     tokens: &[(String, String)],
+    ahead_behind: Option<(usize, usize)>,
     look: SidebarLook,
     appearance: (&FontConfig, &Theme),
 ) -> Div {
@@ -363,13 +364,19 @@ pub(super) fn row(
     } else {
         name_color
     };
-    let on_branch = show_detail && look.style.uncommitted_on_branch();
-    let branch_dirty = on_branch && badge.as_ref().is_some_and(|badge| badge.dirty);
-    let badge = if on_branch {
+    let branch_line = show_detail
+        && matches!(kind, RowKind::Workspace)
+        && !detail.is_empty()
+        && look.style.branch_icon();
+    let dirty = badge.as_ref().is_some_and(|badge| badge.dirty);
+    let badge = if branch_line {
         badge.and_then(RowBadge::without_dirty)
     } else {
         badge
     };
+    let counts = ahead_behind
+        .filter(|_| branch_line)
+        .and_then(ahead_behind_label);
     let icon_reserve = match workspace_icon {
         RowIcon::None => 0.,
         _ => ICON_RESERVE,
@@ -422,7 +429,7 @@ pub(super) fn row(
     let agent_size = line_height(font).min(12.);
     let agent_reserve = agent_size + 4.;
     let name_reserve = icon_reserve + agent_first.map_or(0., |_| agent_reserve);
-    let detail_reserve = if agent_detail.is_some() || branch_dirty {
+    let detail_reserve = if agent_detail.is_some() || branch_line {
         agent_reserve
     } else {
         0.
@@ -449,6 +456,17 @@ pub(super) fn row(
         .py(px(content_top))
         .cursor_pointer()
         .map(|row| look.mark(row, key, state, indent, theme))
+        .when(
+            look.style.marks_blocked() && status == AgentStatus::Blocked && !removing,
+            |row| {
+                row.child(blocked_bar(
+                    key,
+                    look,
+                    indent,
+                    indicators.color(AgentStatus::Blocked),
+                ))
+            },
+        )
         // Tree lines run in the indent the row already reserves, so a child is
         // tied to its parent without box-drawing glyphs in the label.
         .when(tree != RowTree::None && look.style.tree_lines(), |row| {
@@ -544,17 +562,30 @@ pub(super) fn row(
                             .when_some(agent_detail, |line, icon| {
                                 line.child(agent_mark(key, icon, agent_size, detail_color, font))
                             })
-                            .when(branch_dirty, |line| {
-                                line.child(branch_mark(key, agent_size, detail_color, font, theme))
+                            .when(branch_line, |line| {
+                                let color = if dirty {
+                                    theme.palette[3]
+                                } else {
+                                    detail_color
+                                };
+                                line.child(branch_mark(key, dirty, agent_size, color, font))
                             })
                             .child(
                                 div()
                                     .debug_selector(|| format!("detail-{key}"))
                                     .ml(px(detail_reserve.min(label_width)))
                                     .w(px((label_width - detail_reserve).max(0.)))
-                                    .truncate()
                                     .text_color(rgb(detail_color))
-                                    .child(label_text(detail)),
+                                    .map(|line| match &counts {
+                                        None => line.truncate().child(label_text(detail)),
+                                        Some(counts) => detail_with_counts(
+                                            line,
+                                            key,
+                                            (detail, counts),
+                                            (label_width - detail_reserve).max(0.),
+                                            font,
+                                        ),
+                                    }),
                             ),
                     )
                 })
@@ -726,17 +757,74 @@ fn agent_mark(
         .child(svg().path(icon.path()).size_full().text_color(rgb(color)))
 }
 
-fn branch_mark(key: &str, size: f32, color: u32, font: &FontConfig, theme: &Theme) -> Div {
-    let (icon, dot) = (
-        format!("branch-dirty-{key}"),
-        format!("branch-dirty-dot-{key}"),
-    );
+fn branch_mark(key: &str, dirty: bool, size: f32, color: u32, font: &FontConfig) -> Div {
+    let selector = if dirty {
+        format!("branch-dirty-{key}")
+    } else {
+        format!("branch-{key}")
+    };
     crate::icons::branch(size, color)
-        .debug_selector(move || icon)
+        .debug_selector(move || selector)
         .absolute()
         .left_0()
         .top(px((line_height(font) - size) / 2.))
-        .child(crate::icons::branch_dot(theme, size).debug_selector(move || dot))
+}
+
+fn detail_with_counts(
+    line: Div,
+    key: &str,
+    (detail, counts): (&str, &str),
+    width: f32,
+    font: &FontConfig,
+) -> Div {
+    let glyph = glyph_width(font);
+    let counts_width = glyph * (counts.chars().count() + 1) as f32;
+    line.flex()
+        .items_center()
+        .gap(px(glyph))
+        .overflow_hidden()
+        .child(
+            div()
+                .flex_none()
+                .max_w(px((width - counts_width - glyph).max(0.)))
+                .truncate()
+                .child(label_text(detail)),
+        )
+        .child(
+            div()
+                .debug_selector(|| format!("ahead-behind-{key}"))
+                .flex_none()
+                .child(label_text(counts)),
+        )
+}
+
+pub(super) fn ahead_behind_label((ahead, behind): (usize, usize)) -> Option<String> {
+    let parts: Vec<String> = [(ahead, '\u{2191}'), (behind, '\u{2193}')]
+        .into_iter()
+        .filter(|&(count, _)| count > 0)
+        .map(|(count, arrow)| format!("{arrow}{count}"))
+        .collect();
+    (!parts.is_empty()).then(|| parts.join(" "))
+}
+
+const BLOCKED_BAR: f32 = 3.;
+
+fn blocked_bar(key: &str, look: SidebarLook, indent: f32, color: u32) -> Div {
+    let nested = if look.style.nests_children() {
+        indent
+    } else {
+        0.
+    };
+    let edge = look.spacing() / 2. + look.style.radius() / 2.;
+    div()
+        .debug_selector(|| format!("blocked-{key}"))
+        .absolute()
+        .left(px(look.inset() + nested + 1.))
+        .top(px(edge))
+        .bottom(px(edge))
+        .w(px(BLOCKED_BAR))
+        .rounded(px(BLOCKED_BAR / 2.))
+        .bg(rgb(color))
 }
 
 #[cfg(not(any(test, feature = "integration-test")))]

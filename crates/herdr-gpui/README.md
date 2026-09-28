@@ -487,8 +487,9 @@ spacing:
 - `minimal`: one line per row with only the status dot and the name, for narrow
   sidebars or long lists.
 - `orbita`: `comfortable-rounded` with a chevron to fold a repository, a branch
-  icon with a yellow dot before the branch of a checkout with uncommitted work,
-  tree guides tying worktrees to their repository, each child's highlight starting where its guide's tick ends, the
+  icon before each branch, yellow while the checkout has uncommitted work, the
+  branch's ahead and behind counts after it (`↑2 ↓1`), a bar in the blocked
+  status color on rows whose agent is waiting for you, tree guides tying worktrees to their repository, each child's highlight starting where its guide's tick ends, the
   `[sidebar_worktrees]` font on worktree rows, and a line of badges for values
   Herdr plugins report through workspace metadata
   (`herdr workspace report-metadata --token NAME=VALUE`), in the order the
