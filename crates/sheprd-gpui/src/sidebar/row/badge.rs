@@ -39,6 +39,17 @@ impl RowBadge {
         )
     }
 
+    pub(in crate::sidebar) fn without_dirty(self) -> Option<Self> {
+        Self::new(
+            self.pr,
+            self.counts,
+            false,
+            self.teleported,
+            self.noted,
+            self.muted,
+        )
+    }
+
     /// Whether it says anything about the checkout, beyond the workspace's
     /// mute, which card layouts put on the name's line instead.
     pub(in crate::sidebar) fn checkout_marks(&self) -> bool {
