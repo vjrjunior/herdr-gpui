@@ -1409,8 +1409,9 @@ spacing:
   differs from the name, and the pull request. Agents are single compact lines.
 - `minimal`: one line per row with only the status dot and the name, for narrow
   sidebars or long lists.
-- `orbita`: `comfortable-rounded` with a chevron to fold a repository, tree
-  guides tying worktrees to their repository, each child's highlight stepped in under its guide's tick, the
+- `orbita`: `comfortable-rounded` with a chevron to fold a repository, no
+  uncommitted-work mark on its rows beyond the chip that holds
+  `[sidebar] change_counts = "local"` counts, tree guides tying worktrees to their repository, each child's highlight stepped in under its guide's tick, the
   `[sidebar_worktrees]` font on worktree rows, and a line of badges for values
   Herdr plugins report through workspace metadata
   (`herdr workspace report-metadata --token NAME=VALUE`), in the order the
