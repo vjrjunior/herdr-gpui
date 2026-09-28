@@ -9,6 +9,7 @@ use crate::{
     browser::{Pick, Shown, Slot},
     config::ClipboardToastPosition,
     fonts::StyledFont,
+    popup_chrome::PopupLook,
     terminal::*,
     terminal_painter::{self, ImageTarget, PlacedImages},
 };
@@ -80,6 +81,7 @@ impl Render for HerdrWindow {
         let menu_open = self.menu.page.is_some();
         let cell_width = self.cell_width;
         let painter = self.painter.clone();
+        let popup_look = PopupLook::new(&self.config.ui, &self.theme, cell_width, cell_height);
         // The highlight is grid coordinates, so it paints with the frame that
         // owns the cells rather than being recomputed from the pointer here.
         let selection_rows = |owned: bool| -> Vec<_> {
@@ -456,6 +458,7 @@ impl Render for HerdrWindow {
                                         cell_width,
                                         cell_height,
                                     );
+                                    popup_look.paint(popup, bounds, offset, window, cx);
                                     painter.borrow_mut().paint_frame(
                                         &popup.frame,
                                         bounds.origin + offset,

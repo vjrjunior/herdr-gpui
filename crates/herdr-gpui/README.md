@@ -692,14 +692,18 @@ spacing:
   (`herdr workspace report-metadata --token NAME=VALUE`), in the order the
   daemon sends them. A leading `✓`, `✗`, or `●` colors a badge green, red, or
   yellow, and a reported `pr` token replaces the native pull request number.
+  Rows configured through `[ui.sidebar.spaces]` place those values with `$name`
+  tokens instead, so the badge line shows only on native rows: with no
+  configured rows, or with `[usage] inline = false`.
   The title bar's Git control marks uncommitted work with a yellow dot on its
   branch icon instead of the boxed pencil, and the `new` and `menu` footer
   moves into the Spaces header as a plus and a hamburger icon. This fork also
   draws menus, dialogs, notifications, buttons, and fields with square corners
   in every layout; badges, keycaps, and Herdr's rounded layouts keep theirs.
-  Rows configured through `[ui.sidebar.spaces]` place those values with `$name`
-  tokens instead, so the badge line shows only on native rows: with no
-  configured rows, or with `[usage] inline = false`.
+  Terminal popups, such as a plugin's popup pane, sit in a bordered panel with
+  a header naming the popup, over a dimmed terminal; the popup's own grid stays
+  where the daemon places it, so input, the cursor, and the IME still land on
+  it.
 
 New installs start with `comfortable-rounded`: the first launch writes it into
 the new `config-gpui.local.toml`. Existing override files and migrated personal

@@ -61,6 +61,7 @@ mod osc52;
 mod palette;
 mod pane_menu;
 mod panel_resize;
+mod popup_chrome;
 mod port_forward;
 mod pr_actions;
 mod preferences;
