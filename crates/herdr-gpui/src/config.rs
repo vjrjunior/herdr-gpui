@@ -356,6 +356,7 @@ struct Settings {
     pane_keys: PaneKeys,
     devices: BTreeMap<String, DeviceSettings>,
     palette: crate::palette::PaletteConfig,
+    daemon_keybindings: BTreeMap<String, Binding>,
 }
 
 /// Windows sets `USERPROFILE` rather than `HOME`, and upstream Herdr reads both.
@@ -638,8 +639,12 @@ impl Config {
         config.layout = settings.layout;
         config.sidebar_style = settings.sidebar.style()?;
         config.theme_overrides = settings.theme_overrides;
-        config.keybindings =
-            Keymap::with_overrides(&settings.keybindings, &settings.pane_keys, &base.keys)?;
+        config.keybindings = Keymap::with_daemon_bindings(
+            &settings.keybindings,
+            &settings.daemon_keybindings,
+            &settings.pane_keys,
+            &base.keys,
+        )?;
         config.keybinding_overrides = settings.keybindings;
         config.pane_keys = settings.pane_keys;
         if settings.devices.len() > MAX_DEVICES {

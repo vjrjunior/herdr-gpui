@@ -3,6 +3,8 @@ use herdr_client::protocol::ClientShellCommand;
 
 mod custom_reference;
 
+mod daemon_bindings;
+
 fn overrides(entries: &[(&str, Binding)]) -> BTreeMap<String, Binding> {
     entries
         .iter()

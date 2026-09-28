@@ -59,6 +59,12 @@ pub(crate) struct RunCommand {
     pub(crate) command: Command,
 }
 
+#[derive(Clone, PartialEq, serde::Deserialize, Action)]
+#[action(no_json)]
+pub(crate) struct RunDaemonCommand {
+    pub(crate) binding: String,
+}
+
 /// Picks the sidebar layout, from View > Layout.
 #[derive(Clone, PartialEq, serde::Deserialize, Action)]
 #[action(no_json)]
@@ -88,20 +94,29 @@ pub(crate) struct SetBadgePreview {
 /// otherwise the keymap from the last validated config, or the catalog
 /// defaults before any config has loaded.
 pub(crate) fn bind_keys(cx: &mut App) {
+    let local = cx
+        .try_global::<crate::app::InitialAppearance>()
+        .map(|appearance| appearance.config.keybindings.clone())
+        .unwrap_or_default();
     let keymap = cx
         .try_global::<crate::window::ActiveServerKeymap>()
         .and_then(|active| active.0.clone())
-        .or_else(|| {
-            cx.try_global::<crate::app::InitialAppearance>()
-                .map(|appearance| appearance.config.keybindings.clone())
-        })
-        .unwrap_or_default();
+        .unwrap_or_else(|| local.clone());
     cx.bind_keys(keymap.bindings().map(|(command, keystroke)| {
         if command == Command::Quit {
             KeyBinding::new(keystroke, Quit, None)
         } else {
             KeyBinding::new(keystroke, RunCommand { command }, None)
         }
+    }));
+    cx.bind_keys(local.daemon_bindings().map(|(binding, keystroke)| {
+        KeyBinding::new(
+            keystroke,
+            RunDaemonCommand {
+                binding: binding.to_owned(),
+            },
+            None,
+        )
     }));
     cx.bind_keys(crate::log_window::key_bindings());
     cx.bind_keys(crate::settings_window::key_bindings());

@@ -103,6 +103,7 @@ pub struct Keymap {
     /// Keystrokes the focused pane receives as another keystroke. No command
     /// is bound to them, so GPUI's keymap never claims them first.
     pane_keys: Vec<(Keystroke, Keystroke)>,
+    daemon: Vec<(String, Vec<String>)>,
 }
 
 impl Default for Keymap {
@@ -124,6 +125,14 @@ impl Default for Keymap {
 }
 
 impl Keymap {
+    pub(crate) fn with_overrides(
+        overrides: &BTreeMap<String, Binding>,
+        pane_keys: &PaneKeys,
+        keys: &DaemonKeys,
+    ) -> Result<Self> {
+        Self::with_daemon_bindings(overrides, &BTreeMap::new(), pane_keys, keys)
+    }
+
     /// Layers the daemon's `keys` and then `overrides` over the defaults. A
     /// keystroke the GUI config assigns moves to that command, so rebinding
     /// one key never requires unbinding its default or daemon owner too; two
@@ -131,8 +140,10 @@ impl Keymap {
     /// names keeps exactly the keystrokes listed there. `pane_keys` take
     /// their keystrokes from every default and daemon command, but not from
     /// one the GUI config names.
-    pub(crate) fn with_overrides(
+    // Keyed by binding label: the daemon reissues command ids on every boot.
+    pub(crate) fn with_daemon_bindings(
         overrides: &BTreeMap<String, Binding>,
+        bindings: &BTreeMap<String, Binding>,
         pane_keys: &PaneKeys,
         keys: &DaemonKeys,
     ) -> Result<Self> {
@@ -173,7 +184,65 @@ impl Keymap {
                 });
             }
         }
-        Ok(Self::layer(configured, &claimed, keys, pane_keys))
+        let mut native: HashMap<(Modifiers, String), String> = claimed
+            .iter()
+            .map(|(keystroke, name)| (keystroke.clone(), (*name).to_owned()))
+            .collect();
+        for (info, configured) in COMMANDS.iter().zip(&configured) {
+            if configured.is_some() {
+                continue;
+            }
+            for parsed in info
+                .shortcuts
+                .iter()
+                .filter_map(|shortcut| Keystroke::parse(shortcut).ok())
+            {
+                native
+                    .entry(identity(&parsed))
+                    .or_insert_with(|| info.name.to_owned());
+            }
+        }
+        let mut daemon = Vec::new();
+        for (label, binding) in bindings {
+            let label = label.trim();
+            if label.is_empty() {
+                return Err(Error::EmptyDaemonBinding);
+            }
+            let keystrokes: Vec<String> = binding.keystrokes().map(str::to_owned).collect();
+            if keystrokes.len() > MAX_KEYSTROKES {
+                return Err(Error::TooManyDaemonKeystrokes(label.to_owned()));
+            }
+            let owner = format!("daemon_keybindings.{label}");
+            for keystroke in &keystrokes {
+                let parsed = parse_daemon(label, keystroke)?;
+                match native.get(&identity(&parsed)) {
+                    Some(first) if *first != owner => {
+                        return Err(Error::DaemonKeystrokeConflict {
+                            keystroke: keystroke.clone(),
+                            binding: label.to_owned(),
+                            owner: first.clone(),
+                        });
+                    }
+                    Some(_) => {}
+                    None => {
+                        native.insert(identity(&parsed), owner.clone());
+                    }
+                }
+                claimed.insert(identity(&parsed), "daemon_keybindings");
+            }
+            daemon.push((label.to_owned(), keystrokes));
+        }
+        let mut keymap = Self::layer(configured, &claimed, keys, pane_keys);
+        keymap.daemon = daemon;
+        Ok(keymap)
+    }
+
+    pub fn daemon_bindings(&self) -> impl Iterator<Item = (&str, &str)> {
+        self.daemon.iter().flat_map(|(label, keystrokes)| {
+            keystrokes
+                .iter()
+                .map(move |keystroke| (label.as_str(), keystroke.as_str()))
+        })
     }
 
     /// Herdr owns and validates its own file, so a daemon binding this client
@@ -255,6 +324,7 @@ impl Keymap {
             navigate_up: keys.navigate_up.clone(),
             navigate_down: keys.navigate_down.clone(),
             pane_keys,
+            daemon: Vec::new(),
         }
     }
 
@@ -455,6 +525,21 @@ fn parse(command: &'static str, keystroke: &str) -> Result<Keystroke> {
     if !has_modifier(&parsed) {
         return Err(Error::KeystrokeWithoutModifier {
             command,
+            keystroke: keystroke.to_owned(),
+        });
+    }
+    Ok(parsed)
+}
+
+fn parse_daemon(binding: &str, keystroke: &str) -> Result<Keystroke> {
+    let parsed = Keystroke::parse(keystroke).map_err(|source| Error::InvalidDaemonKeystroke {
+        binding: binding.to_owned(),
+        keystroke: keystroke.to_owned(),
+        source,
+    })?;
+    if !has_modifier(&parsed) {
+        return Err(Error::DaemonKeystrokeWithoutModifier {
+            binding: binding.to_owned(),
             keystroke: keystroke.to_owned(),
         });
     }

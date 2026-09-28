@@ -4,6 +4,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 mod bitmap_fonts;
 mod bold_color;
+mod daemon_keybindings;
 mod default_fonts;
 mod discovery;
 mod fonts;

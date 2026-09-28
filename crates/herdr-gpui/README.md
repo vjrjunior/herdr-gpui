@@ -2204,6 +2204,18 @@ Windows setup) nothing is saved and the window says so.
   or one that cannot be read, leaves the device on local keys, and the menu
   says why. Only keybindings follow the server; themes, sidebar, and toasts
   stay local, and no remote config file is read.
+- `[daemon_keybindings]` gives a command the daemon runs itself, such as a
+  `[[keys.command]]` on `prefix+m`, a native shortcut beside its own chord,
+  keyed by the daemon's binding label: `"prefix+m" = "cmd-shift-m"` runs the
+  daemon command bound to `prefix+m` for the focused workspace, tab, and pane,
+  exactly as choosing it in the palette does. The label, not the command id, is
+  the key because the daemon issues new ids every time it starts. The same
+  keystroke rules apply: a key that a native shortcut, `[keybindings]`, or
+  `[pane_keys]` keeps is rejected, while one held by the daemon's `[keys]` or
+  its prefix moves to
+  the binding, as a `[keybindings]` keystroke does. A label no daemon command
+  carries reports that nothing is bound to it. The table is this GUI's own, so
+  it applies on a device that uses its server's keybindings too.
 - Cmd-B toggles sidebar visibility locally without changing daemon state.
   Cmd-, opens Settings; Cmd-/ opens the grouped native shortcut reference.
   Native shortcut labels and keycaps come from the shared `controls::COMMANDS`

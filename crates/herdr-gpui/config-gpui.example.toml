@@ -183,6 +183,11 @@ project_roots = []
 # [devices.0123456789abcdef0123456789abcdef]
 # keybindings = "server"
 
+# Native shortcuts for commands Herdr runs itself, keyed by the binding label
+# the daemon gives the command: a `[[keys.command]]` on `prefix+m` is "prefix+m".
+# [daemon_keybindings]
+# "prefix+m" = "cmd-shift-m"
+
 # Preferences offers a searchable picker for all four families together or each row.
 # Platform default removes the local family override; fallback cascades remain active.
 [sidebar]

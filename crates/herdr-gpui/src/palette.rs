@@ -13,6 +13,7 @@ use herdr_client::{
 use serde_json::{Value, json};
 use std::sync::Arc;
 
+mod daemon_binding;
 mod go_to;
 #[cfg(test)]
 mod interaction_tests;
