@@ -221,7 +221,7 @@ impl SidebarStyle for Rounded {
         Self::trim(density)
     }
     fn radius(&self) -> f32 {
-        crate::config::corners::CONTROL
+        ROUNDED_ROW_RADIUS
     }
     fn highlight(&self) -> Highlight {
         Highlight::Outline
@@ -424,6 +424,8 @@ impl SidebarLook {
 
 /// How far a lifted card pulls in from rows that run edge to edge.
 const LIFT_INSET: f32 = 6.;
+const ROUNDED_ROW_RADIUS: f32 = 8.;
+
 /// The least rounding a lifted card gets, even from square rows.
 const LIFT_RADIUS: f32 = 4.;
 

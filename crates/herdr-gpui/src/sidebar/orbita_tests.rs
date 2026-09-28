@@ -172,8 +172,10 @@ fn orbita_row_cards_have_square_corners() {
         super::layout::for_mode(LayoutMode::Orbita).style.radius(),
         0.
     );
-    let rounded = LayoutMode::new(Density::Comfortable, Style::Rounded);
-    assert!(super::layout::for_mode(rounded).style.radius() > 0.);
+    for density in [Density::Compact, Density::Normal, Density::Comfortable] {
+        let rounded = LayoutMode::new(density, Style::Rounded);
+        assert_eq!(super::layout::for_mode(rounded).style.radius(), 8.);
+    }
 }
 
 #[test]

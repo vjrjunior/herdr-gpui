@@ -499,7 +499,10 @@ spacing:
   The title bar's Git control marks uncommitted work with a yellow dot on its
   branch icon instead of the boxed pencil, and the `new` and `menu` footer
   moves into the Spaces header as a plus and a hamburger icon. The tab strip is
-  6px taller, split evenly above and below each tab's label. The daemon only
+  6px taller, split evenly above and below each tab's label. This fork also
+  draws menus, dialogs, notifications, buttons, and fields with square corners
+  in every layout; badges, keycaps, and Herdr's rounded layouts keep theirs.
+  The daemon only
   computes ahead and behind counts while Herdr's own `[ui.sidebar.spaces]`
   `rows` include the `git_status` token, as its default rows do; a config
   that drops it leaves the counts empty in every client.
