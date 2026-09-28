@@ -770,6 +770,8 @@ fn detail_with_counts(
         .child(
             div()
                 .debug_selector(|| format!("ahead-behind-{key}"))
+                .relative()
+                .top(px(font.size * (1. - BADGE_TEXT)))
                 .flex_none()
                 .flex()
                 .gap(px(glyph * BADGE_TEXT))

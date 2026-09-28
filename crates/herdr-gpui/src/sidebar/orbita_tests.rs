@@ -307,6 +307,8 @@ fn ahead_and_behind_counts_are_separate_spans(cx: &mut TestAppContext) {
     let behind = bounds(cx, "behind-herdr");
     assert!(ahead.right() < behind.left());
     assert!(counts.contains(&ahead.center()) && counts.contains(&behind.center()));
+    let drop = counts.center().y - bounds(cx, "detail-text-herdr").center().y;
+    assert!((drop - px(15. * 0.15)).abs() <= px(0.5), "{drop:?}");
 }
 
 #[test]
