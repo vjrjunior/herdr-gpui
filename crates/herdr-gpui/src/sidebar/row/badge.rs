@@ -25,6 +25,10 @@ impl RowBadge {
     pub(in crate::sidebar) fn without_pr(self) -> Option<Self> {
         Self::new(None, self.dirty, self.teleported, self.noted)
     }
+
+    pub(in crate::sidebar) fn without_dirty(self) -> Option<Self> {
+        Self::new(self.pr, false, self.teleported, self.noted)
+    }
 }
 
 impl RowBadge {

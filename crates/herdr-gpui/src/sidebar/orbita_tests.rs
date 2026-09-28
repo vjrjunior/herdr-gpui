@@ -48,6 +48,15 @@ fn draw_with(
             crate::pull_request::fixture().unwrap(),
             std::time::Instant::now(),
         );
+        view.git.seed_probe(
+            crate::pull_request::Input {
+                checkout: None,
+                repo_key: Some(REPO_KEY.into()),
+                branch: "develop".into(),
+            },
+            true,
+            std::time::Instant::now(),
+        );
         view.config.layout.mode = mode;
         view.config.sidebar.size = 15.;
         view.config.sidebar_worktrees.size = worktree_size;
@@ -350,4 +359,28 @@ fn herdr_layouts_show_no_blocked_bar(cx: &mut TestAppContext) {
         |data| workspace(data, "main").agent_status = AgentStatus::Blocked,
     );
     assert!(cx.debug_bounds("blocked-herdr").is_none());
+}
+
+#[gpui::test]
+fn orbita_rows_draw_no_uncommitted_mark(cx: &mut TestAppContext) {
+    let cx = draw(cx, LayoutMode::Orbita, 15., None);
+    let column = bounds(cx, "column-agent-launcher");
+    let detail = bounds(cx, "detail-agent-launcher");
+    assert_eq!(detail.left(), column.left());
+    assert!(cx.debug_bounds("dirty-agent-launcher").is_none());
+    assert!(
+        cx.debug_bounds("pr-agent-launcher").is_none(),
+        "a dirty row without a pull request reserves no badge column"
+    );
+}
+
+#[gpui::test]
+fn herdr_layouts_keep_the_uncommitted_pencil(cx: &mut TestAppContext) {
+    let cx = draw(
+        cx,
+        LayoutMode::new(Density::Comfortable, Style::Rounded),
+        15.,
+        None,
+    );
+    assert!(cx.debug_bounds("dirty-agent-launcher").is_some());
 }

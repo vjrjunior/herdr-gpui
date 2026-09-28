@@ -53,7 +53,8 @@ impl RowLayout for Orbita {
             badge.and_then(RowBadge::without_pr)
         } else {
             badge
-        };
+        }
+        .and_then(RowBadge::without_dirty);
         let arrow = fold.map(|fold| {
             chevron(fold, cx.theme)
                 .w(px(ARROW_RESERVE - density.gap()))
