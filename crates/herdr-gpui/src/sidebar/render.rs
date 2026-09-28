@@ -32,6 +32,7 @@ impl HerdrWindow {
         let width = sidebar_width(self.sidebar_width, f32::from(window.viewport_size().width));
         let split = self.sidebar_split.unwrap_or(0.5).clamp(0.1, 0.9);
         let look = layout::for_mode(self.config.layout.mode);
+        let header_actions = look.style.header_actions();
         let rows = layout_for(self.config.layout.mode);
         // The row a workspace menu was opened for keeps looking hovered while
         // the pointer is over the menu.
@@ -563,44 +564,52 @@ impl HerdrWindow {
                     })
                     .min_h_0()
                     .overflow_hidden()
-                    .child(header("spaces", font, theme, look))
-                    .child(spaces)
                     .child(
-                        div()
-                            .flex_none()
-                            .h(px(line_height(font) + 2. * layout.footer_padding()))
-                            .px(px(content_x))
-                            .flex()
-                            .items_center()
-                            // Menu hugs the sidebar's edge, as in the terminal client.
-                            .justify_between()
-                            .text_color(rgb(theme.muted))
-                            .gap(px(20.))
-                            .child(
-                                div()
-                                    .id("new-workspace")
-                                    .cursor_pointer()
-                                    .hover(|s| s.text_color(rgb(theme.foreground)))
-                                    .child("new")
-                                    .on_click(cx.listener(|this, _, window, cx| {
-                                        this.command(Command::Workspace, window, cx)
-                                    })),
-                            )
-                            .child(
-                                div()
-                                    .id("sidebar-menu")
-                                    .debug_selector(|| "sidebar-menu".into())
-                                    .cursor_pointer()
-                                    .hover(|s| s.text_color(rgb(theme.foreground)))
-                                    .child(label_text("menu"))
-                                    .on_click(cx.listener(
-                                        |this, event: &ClickEvent, window, cx| {
-                                            this.menu.anchor = event.position();
-                                            this.open_menu(window, cx);
-                                        },
-                                    )),
-                            ),
-                    ),
+                        header("spaces", font, theme, look).when(header_actions, |header| {
+                            header
+                                .justify_between()
+                                .child(super::layouts::spaces_actions(theme, cx))
+                        }),
+                    )
+                    .child(spaces)
+                    .when(!header_actions, |section| {
+                        section.child(
+                            div()
+                                .flex_none()
+                                .h(px(line_height(font) + 2. * layout.footer_padding()))
+                                .px(px(content_x))
+                                .flex()
+                                .items_center()
+                                // Menu hugs the sidebar's edge, as in the terminal client.
+                                .justify_between()
+                                .text_color(rgb(theme.muted))
+                                .gap(px(20.))
+                                .child(
+                                    div()
+                                        .id("new-workspace")
+                                        .cursor_pointer()
+                                        .hover(|s| s.text_color(rgb(theme.foreground)))
+                                        .child("new")
+                                        .on_click(cx.listener(|this, _, window, cx| {
+                                            this.command(Command::Workspace, window, cx)
+                                        })),
+                                )
+                                .child(
+                                    div()
+                                        .id("sidebar-menu")
+                                        .debug_selector(|| "sidebar-menu".into())
+                                        .cursor_pointer()
+                                        .hover(|s| s.text_color(rgb(theme.foreground)))
+                                        .child(label_text("menu"))
+                                        .on_click(cx.listener(
+                                            |this, event: &ClickEvent, window, cx| {
+                                                this.menu.anchor = event.position();
+                                                this.open_menu(window, cx);
+                                            },
+                                        )),
+                                ),
+                        )
+                    }),
             )
             .when(self.config.show_agents, |sidebar| {
                 sidebar

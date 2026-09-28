@@ -12,7 +12,7 @@ mod superset;
 pub(super) use {
     herdr::Herdr,
     minimal::Minimal,
-    orbita::{Orbita, OrbitaRounded},
+    orbita::{Orbita, OrbitaRounded, spaces_actions},
     orca::Orca,
     superset::Superset,
 };

@@ -163,6 +163,9 @@ pub(super) trait SidebarStyle {
     fn uncommitted_on_branch(&self) -> bool {
         false
     }
+    fn header_actions(&self) -> bool {
+        false
+    }
     fn header_case(&self) -> HeaderCase;
 }
 
