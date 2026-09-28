@@ -14,7 +14,11 @@ use super::super::{
     scaled,
     wash::HostMark,
 };
-use crate::config::{FontConfig, Theme};
+use crate::{
+    Command, SheprdWindow,
+    config::{FontConfig, Theme},
+    i18n::fl,
+};
 use gpui::{prelude::*, *};
 
 pub(in super::super) struct Orbita;
@@ -125,6 +129,8 @@ impl RowLayout for Orbita {
 
 const CHEVRON_GROUP: &str = "orbita-fold";
 const CHEVRON_SIZE: f32 = 12.;
+const HEADER_BUTTON: f32 = 20.;
+const HEADER_ICON: f32 = 14.;
 
 fn chevron_width(font: &FontConfig, gap: f32) -> f32 {
     scaled(font, ARROW_RESERVE - gap).min(scaled(font, ARROW_RESERVE) - gap)
@@ -168,6 +174,84 @@ fn chevron(fold: Fold, font: &FontConfig, theme: &Theme) -> Stateful<Div> {
         })
 }
 
+pub(in super::super) fn spaces_header(
+    header: Div,
+    view: &SheprdWindow,
+    look: SidebarLook,
+    cx: &mut Context<SheprdWindow>,
+) -> Div {
+    if !look.header_actions() {
+        return header;
+    }
+    header
+        .justify_between()
+        .gap(px(look.density.gap()))
+        .child(spaces_actions(view, &view.theme, cx))
+}
+
+fn spaces_actions(view: &SheprdWindow, theme: &Theme, cx: &mut Context<SheprdWindow>) -> Div {
+    let (muted, foreground) = (theme.muted, theme.foreground);
+    let hover = rgba((foreground << 8) | 0x14);
+    let button = |id: &'static str, icon: &'static str| {
+        div()
+            .id(id)
+            .debug_selector(move || id.into())
+            .group(id)
+            .size(px(HEADER_BUTTON))
+            .flex_none()
+            .flex()
+            .items_center()
+            .justify_center()
+            .rounded(px(crate::config::corners::CONTROL))
+            .cursor_pointer()
+            .hover(move |style| style.bg(hover))
+            .child(
+                svg()
+                    .path(icon)
+                    .size(px(HEADER_ICON))
+                    .flex_none()
+                    .text_color(rgb(muted))
+                    .group_hover(id, move |style| style.text_color(rgb(foreground))),
+            )
+    };
+    let menu_bounds = std::rc::Rc::new(std::cell::Cell::new(Bounds::<Pixels>::default()));
+    let painted_menu = menu_bounds.clone();
+    div()
+        .flex()
+        .flex_none()
+        .items_center()
+        .gap(px(2.))
+        .child(
+            view.sidebar_button(
+                button("spaces-new", "icons/plus.svg"),
+                fl!("sidebar-new-workspace"),
+            )
+            .on_click(
+                cx.listener(|this, _, window, cx| this.command(Command::Workspace, window, cx)),
+            ),
+        )
+        .child(
+            view.sidebar_button(
+                button("spaces-menu", "icons/menu.svg"),
+                fl!("sidebar-menu-label"),
+            )
+            .child(
+                canvas(
+                    |_, _, _| (),
+                    move |bounds, _, _, _| painted_menu.set(bounds),
+                )
+                .absolute()
+                .inset_0()
+                .size_full(),
+            )
+            .on_click(cx.listener(move |this, _: &ClickEvent, window, cx| {
+                if this.open_menu(window, cx) {
+                    this.menu.anchor = menu_bounds.get().bottom_left();
+                }
+            })),
+        )
+}
+
 const GUIDE_ALPHA: u32 = 0x40;
 
 impl SidebarMetrics {
@@ -181,6 +265,10 @@ impl SidebarMetrics {
 }
 
 impl SidebarLook {
+    pub(in super::super) fn header_actions(&self) -> bool {
+        self.density.orbita
+    }
+
     pub(in super::super) fn tree_color(&self, theme: &Theme) -> Rgba {
         if self.density.orbita {
             rgba((theme.foreground << 8) | GUIDE_ALPHA)

@@ -754,7 +754,8 @@ impl SheprdWindow {
                                     ("spaces", fl!("sidebar-header-spaces"))
                                 };
                                 header(key, &label, font, theme, look)
-                            }),
+                            })
+                            .map(|header| super::layouts::spaces_header(header, self, look, cx)),
                     )
                     // The wrapper clips the pinned header as the next host's
                     // pushes it up, so it never paints over the title above.
@@ -773,7 +774,7 @@ impl SheprdWindow {
                                     .children(pinned_host.map(crate::mark_layer::covering)),
                             }),
                     )
-                    .child(
+                    .children((!look.header_actions()).then(|| {
                         div()
                             .flex_none()
                             .h(px(line_height(font) + 2. * layout.footer_padding()))
@@ -813,8 +814,8 @@ impl SheprdWindow {
                                             this.open_menu(window, cx);
                                         },
                                     )),
-                            ),
-                    ),
+                            )
+                    })),
             )
             .when(agents_panel, |sidebar| {
                 sidebar.child(self.sidebar_split_edge(theme, cx)).child(
