@@ -897,6 +897,8 @@ pub enum Error {
         #[source]
         source: Box<Error>,
     },
+    #[error(transparent)]
+    DaemonBinding(#[from] crate::keymap::DaemonBindingError),
     #[error("theme {name:?} not found in {directories:?}")]
     ThemeNotFound {
         name: String,

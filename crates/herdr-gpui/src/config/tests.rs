@@ -8,6 +8,7 @@ mod bold_color;
 mod code;
 mod code_navigation;
 mod code_start;
+mod daemon_keybindings;
 mod default_fonts;
 mod device_footer;
 mod device_icons;

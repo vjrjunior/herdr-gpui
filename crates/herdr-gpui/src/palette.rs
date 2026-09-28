@@ -15,6 +15,7 @@ use std::sync::Arc;
 
 mod activate;
 mod agent_filter;
+mod daemon_binding;
 mod frecency;
 pub(crate) use frecency::{Frecency, now as unix_now};
 mod go_to;
