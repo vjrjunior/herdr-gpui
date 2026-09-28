@@ -95,6 +95,7 @@ pub(crate) struct MenuState {
     // Selection epoch and connection generation fence captured modal actions.
     pub(super) endpoint_target: (u64, u64),
     pub anchor: Point<Pixels>,
+    pub(crate) right_edge: Option<Pixels>,
     /// Ignore repeated right presses until the opening gesture is released.
     pub(crate) opening_right_click: bool,
     pub focus: FocusHandle,
@@ -355,6 +356,7 @@ impl MenuState {
             usage_scroll: ScrollHandle::new(),
             endpoint_target: (0, 0),
             anchor: Point::default(),
+            right_edge: None,
             opening_right_click: false,
             focus: cx.focus_handle(),
             selected: None,
@@ -437,6 +439,7 @@ impl MenuState {
         self.sessions_scroll.set_offset(Point::default());
         self.usage_scroll.set_offset(Point::default());
         self.opening_right_click = false;
+        self.right_edge = None;
         self.tab = None;
         self.group = None;
         self.host = None;
