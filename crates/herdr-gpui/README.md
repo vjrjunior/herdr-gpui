@@ -486,7 +486,8 @@ spacing:
   differs from the name, and the pull request. Agents are single compact lines.
 - `minimal`: one line per row with only the status dot and the name, for narrow
   sidebars or long lists.
-- `orbita`: `comfortable-rounded` with a chevron to fold a repository, the
+- `orbita`: `comfortable-rounded` with square-cornered row highlights, a
+  chevron to fold a repository, the
   branch's ahead and behind counts after it (`↑2 ↓1`), no uncommitted-work
   mark on its rows, a bar in the blocked status color on rows whose agent is
   waiting for you, tree guides tying worktrees to their repository, each child's highlight starting where its guide's tick ends, the

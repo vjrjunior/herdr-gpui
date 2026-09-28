@@ -209,7 +209,7 @@ impl SidebarStyle for OrbitaRounded {
         Rounded.row_padding(density)
     }
     fn radius(&self) -> f32 {
-        Rounded.radius()
+        0.
     }
     fn highlight(&self) -> Highlight {
         Rounded.highlight()

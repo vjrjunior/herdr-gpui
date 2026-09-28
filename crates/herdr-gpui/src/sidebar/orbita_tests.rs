@@ -167,6 +167,16 @@ fn orbita_is_a_named_layout_after_herdrs() {
 }
 
 #[test]
+fn orbita_row_cards_have_square_corners() {
+    assert_eq!(
+        super::layout::for_mode(LayoutMode::Orbita).style.radius(),
+        0.
+    );
+    let rounded = LayoutMode::new(Density::Comfortable, Style::Rounded);
+    assert!(super::layout::for_mode(rounded).style.radius() > 0.);
+}
+
+#[test]
 fn only_orbita_draws_guides_in_the_border_color() {
     let theme = Theme::builtin("Nord").unwrap();
     let border = gpui::rgba((theme.foreground << 8) | 0x40);
