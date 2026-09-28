@@ -93,6 +93,7 @@ mod pane_menu;
 mod pane_move;
 mod panel_resize;
 mod plugin_values;
+mod popup_chrome;
 mod port_forward;
 mod pr_actions;
 mod preferences;
