@@ -15,6 +15,16 @@ use crate::{
     worktree_banner,
 };
 use gpui::{prelude::*, *};
+
+impl HerdrWindow {
+    pub(crate) fn tab_extra(&self) -> f32 {
+        if self.config.layout.mode == crate::config::LayoutMode::Orbita {
+            crate::constants::ORBITA_TAB_EXTRA
+        } else {
+            0.
+        }
+    }
+}
 use herdr_client::ConnectOptions;
 use std::time::Duration;
 

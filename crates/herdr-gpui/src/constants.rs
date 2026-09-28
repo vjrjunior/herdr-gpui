@@ -9,6 +9,7 @@ pub(crate) const WINDOW_TITLE: &str = env!("HERDR_BUILD_APP_NAME");
 pub(crate) const TAB_WIDTH: f32 = 64.;
 // The reference strip is a shallow band: chrome, not a toolbar.
 pub(crate) const TAB_HEIGHT: f32 = 24.;
+pub(crate) const ORBITA_TAB_EXTRA: f32 = 6.;
 
 // Release builds embed the same calendar version (YYYYMMDD.COUNTER) used for the
 // tag, the bundle, and the downloadable artifacts. Local builds are not releases,

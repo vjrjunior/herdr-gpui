@@ -637,7 +637,7 @@ impl HerdrWindow {
                     .debug_selector(move || slot.selector(&format!("browser-tab-{id}")))
                     .pl(px(10.))
                     .pr(px(3.))
-                    .py(px(2.))
+                    .py(px(2. + self.tab_extra() / 2.))
                     .min_w(px(crate::TAB_WIDTH))
                     .map(|tab| self.grow_tab(tab, slot.id, &Pick::Page(id)))
                     .border_r_1()

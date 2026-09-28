@@ -180,9 +180,12 @@ impl HerdrWindow {
         let mut built: Vec<(Pick, Stateful<Div>)> = Vec::new();
         let mut tabs = div()
             .id(SharedString::from(slot.selector("tabs")))
+            .debug_selector(move || slot.selector("tab-strip"))
             .flex()
             .flex_none()
-            .h(px((self.config.tabs.size * 1.6 + 4.).max(TAB_HEIGHT)))
+            .h(px(
+                (self.config.tabs.size * 1.6 + 4.).max(TAB_HEIGHT) + self.tab_extra()
+            ))
             .text_font(&self.config.tabs)
             .text_size(px(self.config.tabs.size))
             .overflow_x_scroll()
@@ -212,7 +215,7 @@ impl HerdrWindow {
                         // The close button hugs the tab's inner right edge, well
                         // clear of the label it would otherwise crowd.
                         .pr(px(3.))
-                        .py(px(2.))
+                        .py(px(2. + self.tab_extra() / 2.))
                         // Even cells divided by a single rule, as in the reference UI.
                         .min_w(px(TAB_WIDTH))
                         .map(|tab| self.grow_tab(tab, slot.id, &Pick::Herdr(id.clone())))
@@ -750,7 +753,9 @@ impl HerdrWindow {
             .child(
                 div()
                     .flex_none()
-                    .h(px((self.config.tabs.size * 1.6 + 4.).max(TAB_HEIGHT)))
+                    .h(px(
+                        (self.config.tabs.size * 1.6 + 4.).max(TAB_HEIGHT) + self.tab_extra()
+                    ))
                     .bg(rgb(self.theme.surface)),
             )
             .into_any_element()

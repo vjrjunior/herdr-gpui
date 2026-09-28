@@ -475,3 +475,60 @@ fn herdr_layouts_keep_new_and_menu_in_the_footer(cx: &mut TestAppContext) {
     cx.update(|window, cx| full_draw(window, cx).clear(cx));
     assert_eq!(bounds(cx, "menu-panel").left(), px(56.));
 }
+
+fn tab_window(
+    cx: &mut TestAppContext,
+    mode: LayoutMode,
+) -> (gpui::Entity<crate::HerdrWindow>, &mut VisualTestContext) {
+    let (view, cx) = cx.add_window_view(move |window, cx| {
+        let mut view = fixture_window(window, cx);
+        let mut shown = snapshot(6);
+        shown.focused_workspace_id = Some("w0".into());
+        shown.focused_tab_id = Some("t0".into());
+        view.live.snapshot = Some(Arc::new(shown));
+        view.config.layout.mode = mode;
+        view.config.tabs.size = 14.;
+        view
+    });
+    cx.simulate_resize(size(px(800.), px(600.)));
+    cx.update(|window, cx| full_draw(window, cx).clear(cx));
+    (view, cx)
+}
+
+#[gpui::test]
+fn orbita_tabs_are_six_pixels_taller(cx: &mut TestAppContext) {
+    let herdr = {
+        let (_, cx) = tab_window(cx, LayoutMode::new(Density::Comfortable, Style::Rounded));
+        (
+            bounds(cx, "tab-strip").size.height,
+            bounds(cx, "tab-t0").size.height,
+        )
+    };
+    assert!(
+        (herdr.0 - px(14. * 1.6 + 4.)).abs() <= px(0.5),
+        "{:?}",
+        herdr.0
+    );
+    let (_, cx) = tab_window(cx, LayoutMode::Orbita);
+    let strip = bounds(cx, "tab-strip").size.height;
+    assert!((strip - herdr.0 - px(6.)).abs() <= px(0.5), "{strip:?}");
+    let tab = bounds(cx, "tab-t0").size.height;
+    assert!((tab - herdr.1 - px(6.)).abs() <= px(0.5), "{tab:?}");
+    assert_eq!(bounds(cx, "new-tab").size.height, strip);
+}
+
+#[cfg(any(target_os = "macos", windows))]
+#[gpui::test]
+fn orbita_browser_tabs_match_terminal_tabs(cx: &mut TestAppContext) {
+    let (view, cx) = tab_window(cx, LayoutMode::Orbita);
+    cx.update(|window, cx| {
+        view.update(cx, |view, cx| {
+            view.command(crate::controls::Command::NewBrowserTab, window, cx)
+        });
+    });
+    cx.update(|window, cx| full_draw(window, cx).clear(cx));
+    assert_eq!(
+        bounds(cx, "browser-tab-0").size.height,
+        bounds(cx, "tab-t0").size.height
+    );
+}
