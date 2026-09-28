@@ -24,6 +24,7 @@ mod config;
 mod control;
 mod credentials;
 mod daemon;
+mod daemon_bindings;
 mod devices;
 mod dispatch;
 mod editor;

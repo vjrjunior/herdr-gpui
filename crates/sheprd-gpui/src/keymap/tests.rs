@@ -9,6 +9,8 @@ mod pane_keys;
 mod platform_defaults;
 mod shift_enter;
 
+mod daemon_bindings;
+
 fn overrides(entries: &[(&str, Binding)]) -> BTreeMap<String, Binding> {
     entries
         .iter()

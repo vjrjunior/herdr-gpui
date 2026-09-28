@@ -150,9 +150,12 @@ impl SheprdWindow {
         } else {
             overrides.remove(name);
         }
-        if let Err(error) =
-            Keymap::with_overrides(&overrides, &self.config.pane_keys, &DaemonKeys::default())
-        {
+        if let Err(error) = Keymap::with_edited_overrides(
+            &self.config.keybindings,
+            &overrides,
+            &self.config.pane_keys,
+            &DaemonKeys::default(),
+        ) {
             editor.error = Some(error.to_string());
             cx.notify();
             return;

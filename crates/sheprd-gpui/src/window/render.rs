@@ -839,6 +839,7 @@ impl Render for SheprdWindow {
             .on_action(cx.listener(|this, action: &RunCommand, window, cx| {
                 this.command(action.command, window, cx);
             }))
+            .on_action(cx.listener(Self::run_daemon_command))
             .on_action(cx.listener(|_, _: &Minimize, window, _| {
                 window.minimize_window();
             }))

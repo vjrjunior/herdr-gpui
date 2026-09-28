@@ -54,6 +54,7 @@ impl Localize for Error {
             Self::Control(error) => error.localize(),
             Self::Credentials(error) => error.localize(),
             Self::Daemon(error) => error.localize(),
+            Self::DaemonBindings(error) => error.localize(),
             Self::DeletionLookup => fl!("error-deletion-lookup"),
             Self::DetachedHead => fl!("error-detached-head"),
             Self::Devices(error) => error.localize(),

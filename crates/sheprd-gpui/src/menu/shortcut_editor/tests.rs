@@ -2,6 +2,7 @@ use super::*;
 use crate::controls::{COMMANDS, Command};
 use gpui::{Modifiers, TestAppContext, size};
 
+mod daemon_bindings;
 mod en_xa;
 mod focus;
 

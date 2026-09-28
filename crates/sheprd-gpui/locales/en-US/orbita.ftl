@@ -1,3 +1,9 @@
 orbita-layout = Orbita
 orbita-fonts-worktrees = Worktrees
 orbita-fonts-specimen-worktrees = Specimen · Worktrees
+orbita-error-daemon-bindings-empty-label = daemon_keybindings: a daemon binding label must not be empty
+orbita-error-daemon-bindings-invalid-keystroke = daemon_keybindings.{ $binding }: invalid keystroke { $keystroke }
+orbita-error-daemon-bindings-keystroke-conflict = daemon_keybindings.{ $binding }: { $keystroke } is already bound to { $owner }
+orbita-error-daemon-bindings-keystroke-without-modifier = daemon_keybindings.{ $binding }: { $keystroke } needs a cmd, ctrl, alt, or fn modifier so typing still reaches the terminal
+orbita-error-daemon-bindings-too-many-keystrokes = daemon_keybindings.{ $binding } must list at most 8 keystrokes
+orbita-error-daemon-bindings-unbound = No Herdr command is bound to { $binding }.
