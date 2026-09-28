@@ -66,6 +66,7 @@ impl Render for HerdrWindow {
         let menu_open = self.menu.page.is_some();
         let cell_width = self.cell_width;
         let painter = self.painter.clone();
+        let popup_look = (self.config.ui.clone(), self.theme.clone());
         // The highlight is grid coordinates, so it paints with the frame that
         // owns the cells rather than being recomputed from the pointer here.
         let selection = self.selection.clone();
@@ -336,6 +337,20 @@ impl Render for HerdrWindow {
                                     highlight(selection.as_ref().is_some_and(|selection| {
                                         selection.in_popup(&popup.terminal_id)
                                     }));
+                                crate::popup_chrome::paint_popup_chrome(
+                                    &popup.title,
+                                    Bounds::new(
+                                        bounds.origin + offset,
+                                        size(
+                                            px(f32::from(popup.frame.width) * cell_width),
+                                            px(f32::from(popup.frame.height) * cell_height),
+                                        ),
+                                    ),
+                                    bounds,
+                                    (&popup_look.0, &popup_look.1),
+                                    window,
+                                    cx,
+                                );
                                 painter.borrow_mut().paint_frame(
                                     &popup.frame,
                                     bounds.origin + offset,

@@ -47,6 +47,7 @@ mod notifications;
 mod osc52;
 mod palette;
 mod pane_menu;
+mod popup_chrome;
 mod preferences;
 mod presentation;
 mod progress;

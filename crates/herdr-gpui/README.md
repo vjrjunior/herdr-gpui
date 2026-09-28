@@ -502,6 +502,10 @@ spacing:
   6px taller, split evenly above and below each tab's label. This fork also
   draws menus, dialogs, notifications, buttons, and fields with square corners
   in every layout; badges, keycaps, and Herdr's rounded layouts keep theirs.
+  Terminal popups, such as a plugin's popup pane, sit in a bordered panel with
+  a header naming the popup, over a dimmed terminal; the popup's own grid stays
+  where the daemon places it, so input, the cursor, and the IME still land on
+  it.
   The daemon only
   computes ahead and behind counts while Herdr's own `[ui.sidebar.spaces]`
   `rows` include the `git_status` token, as its default rows do; a config
