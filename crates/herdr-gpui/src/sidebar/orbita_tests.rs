@@ -199,10 +199,15 @@ fn herdr_layouts_keep_their_fold_triangle(cx: &mut TestAppContext) {
 }
 
 #[gpui::test]
-fn the_fold_chevrons_load_and_render(cx: &mut TestAppContext) {
+fn orbita_icons_load_and_render(cx: &mut TestAppContext) {
     use gpui::{AssetSource, DevicePixels, Image, ImageFormat};
     let renderer = cx.update(|cx| cx.svg_renderer());
-    for path in ["icons/chevron-right.svg", "icons/chevron-down.svg"] {
+    for path in [
+        "icons/chevron-right.svg",
+        "icons/chevron-down.svg",
+        "icons/plus.svg",
+        "icons/menu.svg",
+    ] {
         let bytes = crate::icons::Icons.load(path).unwrap().unwrap();
         let image = Image::from_bytes(ImageFormat::Svg, bytes.into_owned())
             .to_image_data(renderer.clone())
@@ -213,4 +218,78 @@ fn the_fold_chevrons_load_and_render(cx: &mut TestAppContext) {
         let pixels = image.as_bytes(0).unwrap();
         assert!(pixels.chunks_exact(4).any(|pixel| pixel[3] > 0), "{path}");
     }
+}
+
+#[gpui::test]
+fn orbita_puts_new_and_menu_in_the_spaces_header(cx: &mut TestAppContext) {
+    let cx = draw(cx, LayoutMode::Orbita, 15., None);
+    let header = bounds(cx, "header-spaces");
+    let label = bounds(cx, "header-label-spaces");
+    let new = bounds(cx, "spaces-new");
+    let menu = bounds(cx, "spaces-menu");
+    assert!(cx.debug_bounds("sidebar-menu").is_none());
+    for button in [new, menu] {
+        assert_eq!(button.size, size(px(20.), px(20.)));
+        assert!(button.left() > label.right());
+        assert!((button.center().y - header.center().y).abs() <= px(0.5));
+    }
+    assert!(new.right() <= menu.left());
+    assert_eq!(header.right() - menu.right(), label.left() - header.left());
+    cx.simulate_click(menu.center(), Default::default());
+    cx.update(|window, cx| full_draw(window, cx).clear(cx));
+    assert!(bounds(cx, "menu-panel").top() >= menu.bottom());
+    assert!(cx.debug_bounds("menu-reload GUI config").is_some());
+}
+
+#[gpui::test]
+fn the_spaces_header_plus_asks_the_daemon_for_a_workspace(cx: &mut TestAppContext) {
+    let (view, cx) = cx.add_window_view(|window, cx| {
+        let mut view = fixture_window(window, cx);
+        view.config.layout.mode = LayoutMode::Orbita;
+        view
+    });
+    cx.simulate_resize(size(px(800.), px(600.)));
+    cx.update(|window, cx| {
+        view.update(cx, |view, _| {
+            view.reconnect();
+            let client = herdr_client::connect(
+                herdr_client::ConnectTarget::Socket("/unused-orbita-header-test.sock".into()),
+                view.options,
+            )
+            .unwrap();
+            client.handle.disconnect();
+            view.endpoints[0].connection.handle = Some(client.handle);
+            view.live.snapshot = Some(Arc::new(snapshot(2)));
+        });
+        full_draw(window, cx).clear(cx);
+        view.update(cx, |view, _| {
+            view.last_queued_options = Some(view.options);
+            view.local_error = None;
+            view.activation_deadline = None;
+        });
+    });
+    let new = bounds(cx, "spaces-new");
+    cx.simulate_click(new.center(), Default::default());
+    cx.update(|_, cx| {
+        let error = view.read(cx).local_error.clone();
+        assert!(
+            error
+                .as_deref()
+                .is_some_and(|error| error.starts_with("workspace.create")),
+            "{error:?}"
+        );
+    });
+}
+
+#[gpui::test]
+fn herdr_layouts_keep_new_and_menu_in_the_footer(cx: &mut TestAppContext) {
+    let cx = draw(
+        cx,
+        LayoutMode::new(Density::Comfortable, Style::Rounded),
+        15.,
+        None,
+    );
+    assert!(cx.debug_bounds("sidebar-menu").is_some());
+    assert!(cx.debug_bounds("spaces-new").is_none());
+    assert!(cx.debug_bounds("spaces-menu").is_none());
 }

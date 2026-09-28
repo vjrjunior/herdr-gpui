@@ -692,7 +692,8 @@ spacing:
   daemon sends them. A leading `✓`, `✗`, or `●` colors a badge green, red, or
   yellow, and a reported `pr` token replaces the native pull request number.
   The title bar's Git control marks uncommitted work with a yellow dot on its
-  branch icon instead of the boxed pencil.
+  branch icon instead of the boxed pencil, and the `new` and `menu` footer
+  moves into the Spaces header as a plus and a hamburger icon.
   Rows configured through `[ui.sidebar.spaces]` place those values with `$name`
   tokens instead, so the badge line shows only on native rows: with no
   configured rows, or with `[usage] inline = false`.
