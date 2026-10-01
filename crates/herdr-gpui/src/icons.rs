@@ -109,7 +109,7 @@ pub(super) fn branch_dot(theme: &crate::config::Theme, icon: f32) -> gpui::Div {
         .top(px(icon * BRANCH_HEAD_NODE.y - size / 2.))
         .size(px(size))
         .rounded_full()
-        .bg(rgb(theme.palette[3]))
+        .bg(rgb(theme.ink(theme.palette[3])))
 }
 
 impl AssetSource for Icons {

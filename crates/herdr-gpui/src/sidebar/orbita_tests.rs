@@ -199,9 +199,9 @@ fn only_orbita_draws_guides_in_the_border_color() {
 fn token_colors_follow_their_leading_mark() {
     let theme = Theme::builtin("Nord").unwrap();
     let color = |value| super::row::token_color(value, &theme);
-    assert_eq!(color("\u{2713} CI"), theme.palette[2]);
-    assert_eq!(color("\u{2717} changes"), theme.palette[1]);
-    assert_eq!(color("\u{25cf} review"), theme.palette[3]);
+    assert_eq!(color("\u{2713} CI"), theme.ink(theme.palette[2]));
+    assert_eq!(color("\u{2717} changes"), theme.ink(theme.palette[1]));
+    assert_eq!(color("\u{25cf} review"), theme.ink(theme.palette[3]));
     assert_eq!(color("#646 \u{b7} open"), theme.subtext());
     assert_eq!(color(""), theme.subtext());
 }
@@ -338,8 +338,31 @@ fn ahead_and_behind_counts_show_only_what_moved() {
 fn ahead_is_green_and_behind_is_red() {
     use super::row::Drift;
     let theme = Theme::default();
-    assert_eq!(Drift::Ahead(1).color(&theme), theme.palette[2]);
-    assert_eq!(Drift::Behind(1).color(&theme), theme.palette[1]);
+    assert_eq!(Drift::Ahead(1).color(&theme), theme.ink(theme.palette[2]));
+    assert_eq!(Drift::Behind(1).color(&theme), theme.ink(theme.palette[1]));
+}
+
+#[test]
+fn token_and_drift_colors_reach_the_contrast_setting_on_every_builtin_theme() {
+    use super::row::{Drift, token_color};
+    use crate::contrast::Contrast;
+    for name in Theme::BUILTIN_NAMES {
+        for contrast in [Contrast::Standard, Contrast::High] {
+            let theme = Theme::builtin(name).unwrap().with_contrast(contrast);
+            let tokens = ["\u{2713} CI", "\u{2717} changes", "\u{25cf} review"]
+                .map(|value| token_color(value, &theme));
+            let drifts = [Drift::Ahead(1), Drift::Behind(1)].map(|drift| drift.color(&theme));
+            for color in tokens.into_iter().chain(drifts) {
+                for background in [theme.background, theme.surface, theme.active] {
+                    let ratio = crate::contrast::ratio(color, background);
+                    assert!(
+                        ratio >= contrast.mark_ratio(),
+                        "{name} {contrast:?} {color:06x} on {background:06x}: {ratio}"
+                    );
+                }
+            }
+        }
+    }
 }
 
 #[gpui::test]
