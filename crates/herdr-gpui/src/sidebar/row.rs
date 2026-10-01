@@ -671,9 +671,9 @@ fn badge_line(
 
 pub(super) fn token_color(value: &str, theme: &Theme) -> u32 {
     match value.chars().next() {
-        Some('\u{2713}') => theme.palette[2],
-        Some('\u{2717}') => theme.palette[1],
-        Some('\u{25cf}') => theme.palette[3],
+        Some('\u{2713}') => theme.ink(theme.palette[2]),
+        Some('\u{2717}') => theme.ink(theme.palette[1]),
+        Some('\u{25cf}') => theme.ink(theme.palette[3]),
         _ => theme.subtext(),
     }
 }
