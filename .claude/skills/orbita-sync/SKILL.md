@@ -189,6 +189,31 @@ Each stop is one fork commit that no longer applies. For each one:
    git add -A crates && GIT_EDITOR=true git rebase --continue
    ```
 
+Two helpers take the mechanical part out of a stop. Both live in
+`.claude/skills/orbita-sync/scripts/`:
+
+- `pick.py FILE` lists a file's conflict blocks with their sizes;
+  `pick.py FILE o,t,b` resolves them by side. Upstream is `o` (ours) during a
+  rebase, the fork commit is `t`.
+- `port_hunks.py SHA OLD_PATH NEW_PATH...` replays what fork commit `SHA` did to
+  `OLD_PATH` onto the files upstream moved that code to. This is the usual case
+  when upstream splits a file or moves a test module out: git reports the whole
+  old block as one conflict, so take upstream's side with `pick.py` and replay
+  the fork's hunks where the code now lives. Run it with `--dry` first, and
+  `--skip` the hunks git already merged, since a hunk that only adds lines
+  would land twice.
+
+Put code the fork adds in files the fork owns whenever a seam allows it: a
+module beside upstream's, a topic file under the module's `tests/`. Upstream
+never edits those, so they cannot conflict, and they keep the fork's lines out
+of files upstream holds near the size limit.
+
+A chain of fork commits that build something up and take it down again is not
+worth porting step by step through a structure upstream rewrote. Port the end
+state, skip the commits whose whole effect a later fork commit removes, reword
+the ones that keep only part of what their subject says, and say so in the
+report.
+
 To reword a commit while continuing, write the new message to a scratch file and
 let git copy it in. The subject is a changelog entry, so keep it a conventional
 subject that reads well to a user, and change it only when it became untrue:
@@ -205,6 +230,16 @@ someone bisecting later. The repository's commit hook accepts `fixup!` subjects:
 git commit --fixup=<rebased-sha>
 GIT_EDITOR=true git rebase --autosquash main
 ```
+
+To change only the message of a commit already applied, commit an empty
+`amend!` whose body is the full new message, then autosquash the same way:
+
+```sh
+git commit --allow-empty --only -F /absolute/path/to/message.txt
+```
+
+where the file starts with `amend! <the commit's current subject>`, a blank
+line, and then the new subject and body.
 
 Things that went wrong before, so they do not again:
 
