@@ -141,6 +141,16 @@ scripts/fork/update.sh
 
 Keep the tag name it prints; step 8 needs it.
 
+This skill's own commits sit at the top of the fork's stack, so while the rebase
+replays the commits below them, `.claude/skills/orbita-sync/` is missing from the
+working tree. Copy the helpers out before they disappear:
+
+```sh
+mkdir -p <scratch>/orbita-sync && cp .claude/skills/orbita-sync/scripts/*.py <scratch>/orbita-sync/
+```
+
+and run them from there during step 4.
+
 The script fetches again, so `main` may land on a newer commit than step 1 saw.
 If it did, run `status.sh --no-fetch` once more so the report describes what was
 actually brought in.
@@ -189,8 +199,8 @@ Each stop is one fork commit that no longer applies. For each one:
    git add -A crates && GIT_EDITOR=true git rebase --continue
    ```
 
-Two helpers take the mechanical part out of a stop. Both live in
-`.claude/skills/orbita-sync/scripts/`:
+Two helpers take the mechanical part out of a stop. Run the copies made in
+step 3:
 
 - `pick.py FILE` lists a file's conflict blocks with their sizes;
   `pick.py FILE o,t,b` resolves them by side. Upstream is `o` (ours) during a
