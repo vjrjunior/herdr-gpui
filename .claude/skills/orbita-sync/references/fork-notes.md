@@ -11,6 +11,7 @@ files often, so entries name symbols, not paths: find them with a search.
 | `[daemon_keybindings]` | Kept. The user's `config-gpui.local.toml` binds `"prefix+m" = "cmd-shift-m"`. Upstream runs `[[keys.command]]` chords itself, so the table only adds a native shortcut beside the chord. Its bindings come from the local GUI config even while a device uses its server's keybindings. A keystroke `[pane_keys]` holds is refused, like one a native shortcut holds. | 2026-10-05 |
 | Plugin token badges | Open. The Orbita layout follows rows configured in the daemon's `[ui.sidebar.spaces]` like every layout, and draws its own badge line only on native rows (no configured rows, or `[usage] inline = false`). Whether the badge line stays is the user's call. | 2026-10-03 |
 | Uncommitted mark on rows | Orbita rows draw none (`marks_uncommitted` is false for the Orbita style); the title bar marks the focused checkout with a dot on its branch icon. The earlier steps that drew a dot and then a branch icon on rows were dropped from the history. | 2026-10-05 |
+| Bundle signing | `scripts/fork/update.sh` signs ad hoc, without the hardened runtime, so upstream's `Herdr.entitlements` is not applied: the `NSMicrophoneUsageDescription` key in upstream's `Info.plist` is what lets a pane ask for the microphone. If the script ever signs with `--options runtime`, pass the entitlements file too. | 2026-10-07 |
 | Tab strip height | The fork's extra 6px was dropped. Upstream's tab row is the title bar now and is at least 34px tall, more than the fork's strip was. Open for the user: whether they want it taller still. | 2026-10-05 |
 
 ## Where the fork's code lives
@@ -39,12 +40,18 @@ git merged them cleanly. The type-check finds the first four; only the tests and
 `just ci` find the rest.
 
 - **New callers of functions the fork changed.** `titlebar::render` takes a
-  `&Theme` in the fork; `SidebarLook::mark` takes an `indent`; the shared
-  sidebar `row` takes the fork's `tokens` list. Every window, layout, or rail
-  upstream adds calls the old shape.
+  `&Theme` in the fork; `SidebarLook::highlight` and `SidebarLook::mark` take
+  an `indent`; the shared sidebar `row` takes the fork's `tokens` list. Every
+  window, layout, rail, or row upstream adds or moves out calls the old shape:
+  `HerdrWindow::host_row` needed the `indent` when the host header left
+  `render_sidebar`.
 - **New constructions of structs the fork extended.** `RowContext` has a
-  `worktree_font`, and `Theme` has `accent` and `chrome`. Upstream's new tests
-  and previews build them without those.
+  `worktree_font`, and `Theme` has `accent` and `chrome`. Upstream's new tests,
+  previews, and row builders (`append_agent_rows`) build them without those.
+- **Upstream changing a type the fork's tests build.** `pull_request::Input`'s
+  `repo_key` became an `Option`, and the fork's fixtures stopped compiling in
+  test targets only. One fixture can be extended by several fork commits, so
+  `git blame` each failing line after the rebase and fix up each owner.
 - **New exhaustive matches.** `LayoutMode::Orbita` and
   `FontFace::SidebarWorktrees` are fork variants; upstream's new `match`es do
   not list them.
@@ -79,3 +86,9 @@ git merged them cleanly. The type-check finds the first four; only the tests and
 - When upstream splits a file the fork also edits, or moves its test module
   out, git reports the whole old block as the conflict. Take upstream's side
   and replay the fork's hunks with `port_hunks.py`.
+- The Spaces section of `render_sidebar`: the fork hangs `header_actions` on
+  the header and wraps the footer in `when(!header_actions)`, so an upstream
+  edit to what sits between them conflicts. Keep upstream's body, such as the
+  wrapper that clips the pinned host header, between the fork's two hooks.
+- The test module list in `config/tests.rs` conflicts whenever upstream adds a
+  topic file next to the fork's. Keep both lines, in alphabetical order.
