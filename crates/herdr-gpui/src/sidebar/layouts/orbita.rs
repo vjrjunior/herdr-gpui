@@ -4,15 +4,22 @@
 //! values plugins report through workspace metadata. Rows the daemon's sidebar
 //! config lays out name those values themselves, so they take no badge line.
 
-use super::super::{
-    ARROW_RESERVE,
-    agents::agent_labels,
-    cell::{AgentRow, Fold, RowContext, RowLayout, RowState, WorkspaceRow},
-    layout::{SidebarLook, SidebarMetrics},
-    line_height,
-    row::{RowBadge, RowIcon, RowKind, RowLift, RowTree},
+use super::{
+    super::{
+        ARROW_RESERVE,
+        agents::agent_labels,
+        cell::{AgentRow, Fold, RowContext, RowLayout, RowState, WorkspaceRow},
+        label_text,
+        layout::{SidebarLook, SidebarMetrics},
+        line_height,
+        row::{RowBadge, RowIcon, RowKind, RowLift, RowTree},
+    },
+    parts::{glyph_at, wash},
 };
-use crate::{Command, HerdrWindow, config::Theme};
+use crate::{
+    Command, HerdrWindow,
+    config::{FontConfig, Theme},
+};
 use gpui::{prelude::*, *};
 
 pub(in super::super) struct Orbita;
@@ -270,6 +277,46 @@ impl SidebarLook {
             RowLift::Resting => self.hover_group(row).child(layer),
             _ => row.child(layer),
         }
+    }
+
+    pub(in super::super) fn counts_x(&self, after_branch: f32, trailing: f32) -> f32 {
+        if self.density.orbita {
+            trailing.max(after_branch)
+        } else {
+            after_branch
+        }
+    }
+
+    pub(in super::super) fn primary_chip(
+        &self,
+        key: &str,
+        primary: bool,
+        font: &FontConfig,
+        theme: &Theme,
+    ) -> (f32, Option<Div>) {
+        if !(self.density.orbita && primary) {
+            return (0., None);
+        }
+        let small = (font.size * 0.85).round();
+        let width = (7. * glyph_at(font, small)).ceil() + 10.;
+        let chip = div()
+            .debug_selector(|| format!("primary-{key}"))
+            .absolute()
+            .top_0()
+            .right_0()
+            .w(px(width))
+            .h(px(line_height(font)))
+            .flex()
+            .items_center()
+            .justify_center()
+            .rounded(px(crate::config::corners::SMALL))
+            .border_1()
+            .border_color(wash(theme.foreground, 0x33))
+            .bg(wash(theme.foreground, 0x0f))
+            .text_size(px(small))
+            .text_color(rgb(theme.subtext()))
+            .child(label_text("primary"));
+        (width + self.density.gap(), Some(chip))
     }
 
     pub(in super::super) fn mark_blocked(

@@ -6,6 +6,8 @@ use gpui::{Bounds, Pixels, TestAppContext, VisualTestContext, px, size};
 use herdr_client::protocol::{AgentStatus, ClientShellSnapshot, ClientShellWorkspace};
 use std::sync::Arc;
 
+mod primary_and_counts;
+
 type Tokens = Vec<(String, String)>;
 
 fn draw(

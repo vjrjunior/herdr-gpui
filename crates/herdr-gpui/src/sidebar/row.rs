@@ -405,6 +405,8 @@ pub(super) fn row(
     let agent_detail = agent_icon.filter(|_| !detail.is_empty());
     let (agent_size, agent_reserve) = agent_icon_size(font);
     let name_reserve = icon_reserve + agent_first.map_or(0., |_| agent_reserve);
+    let (chip_reserve, chip) =
+        look.primary_chip(key, reserve_arrow && tree == RowTree::None, font, theme);
     let token_lines = if tokens.is_empty() { 0. } else { 1. };
     div()
         .debug_selector(|| format!("row-{key}"))
@@ -528,12 +530,13 @@ pub(super) fn row(
                                     name_line(
                                         name,
                                         (name_color, weight, theme.muted),
-                                        (label_width - name_reserve).max(0.),
+                                        (label_width - name_reserve - chip_reserve).max(0.),
                                         font,
                                     )
                                     .debug_selector(|| format!("name-{key}"))
                                     .ml(px(name_reserve.min(label_width))),
-                                ),
+                                )
+                                .children(chip),
                         )
                         .when(show_detail, |column| {
                             let detail_x =
@@ -551,6 +554,9 @@ pub(super) fn row(
                                     (width, width + glyph)
                                 }
                             };
+                            let upstream_x = upstream_inline.map_or(upstream_x, |upstream| {
+                                look.counts_x(upstream_x, room - upstream.width(glyph))
+                            });
                             column.child(
                                 div()
                                     .relative()
