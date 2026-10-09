@@ -30,7 +30,7 @@ these, so they cannot conflict:
 - `sidebar/layouts/orbita.rs` and `sidebar/orbita_tests.rs`. The layout file
   also holds the Orbita preset and the look methods the shared row and the
   sidebar render call: `mark_nested`, `mark_blocked`, `tree_color`,
-  `tree_padding`, `header_actions`.
+  `tree_padding`, `header_actions`, `primary_chip`, `counts_x`.
 - Topic test files: `config/tests/{theme_overrides,sidebar_worktrees,daemon_keybindings}.rs`,
   `keymap/tests/daemon_bindings.rs`, `titlebar/orbita_git_button_tests.rs`.
 
