@@ -60,3 +60,13 @@ fn orbita_trails_upstream_counts_on_the_branch_line(cx: &mut TestAppContext) {
     let counts = bounds(cx, "upstream-agent-launcher");
     assert!(counts.left() - branch.right() > px(20.));
 }
+
+#[gpui::test]
+fn orbita_sets_the_fold_chevron_on_the_name_line(cx: &mut TestAppContext) {
+    let cx = draw(cx, LayoutMode::Orbita, 15., None);
+    let chevron = bounds(cx, "chevron-3").center().y;
+    let name = bounds(cx, "name-agent-launcher").center().y;
+    let chip = bounds(cx, "primary-agent-launcher").center().y;
+    assert!((chevron - name).abs() <= px(0.5), "{chevron:?} {name:?}");
+    assert!((chevron - chip).abs() <= px(0.5), "{chevron:?} {chip:?}");
+}
