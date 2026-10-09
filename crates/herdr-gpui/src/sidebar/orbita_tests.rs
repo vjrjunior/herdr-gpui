@@ -3,7 +3,10 @@
 use super::layout_tests::{REPO_KEY, fixture_window, full_draw, snapshot};
 use crate::config::{Density, LayoutMode, Style, Theme};
 use gpui::{Bounds, Pixels, TestAppContext, VisualTestContext, px, size};
+use herdr_client::protocol::{ClientShellSnapshot, ClientShellWorkspace};
 use std::sync::Arc;
+
+mod primary_and_counts;
 
 type Tokens = Vec<(String, String)>;
 
@@ -13,17 +16,30 @@ fn draw(
     worktree_size: f32,
     tokens: Option<Tokens>,
 ) -> &mut VisualTestContext {
+    draw_with(cx, mode, worktree_size, move |data| {
+        if let Some(tokens) = tokens {
+            workspace(data, "worktree/sidebar-child").tokens = tokens;
+        }
+    })
+}
+
+fn workspace<'a>(data: &'a mut ClientShellSnapshot, branch: &str) -> &'a mut ClientShellWorkspace {
+    data.workspaces
+        .iter_mut()
+        .find(|w| w.branch.as_deref() == Some(branch))
+        .unwrap()
+}
+
+fn draw_with(
+    cx: &mut TestAppContext,
+    mode: LayoutMode,
+    worktree_size: f32,
+    edit: impl FnOnce(&mut ClientShellSnapshot) + 'static,
+) -> &mut VisualTestContext {
     let (_, cx) = cx.add_window_view(move |window, cx| {
         let mut view = fixture_window(window, cx);
         let mut data = snapshot(6);
-        if let Some(tokens) = tokens {
-            let child = data
-                .workspaces
-                .iter_mut()
-                .find(|w| w.branch.as_deref() == Some("worktree/sidebar-child"))
-                .unwrap();
-            child.tokens = tokens;
-        }
+        edit(&mut data);
         view.live.snapshot = Some(Arc::new(data));
         view.seed_pr(
             crate::pull_request::Input {
