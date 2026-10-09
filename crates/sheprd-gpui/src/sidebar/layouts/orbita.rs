@@ -30,12 +30,6 @@ pub(in super::super) struct Orbita;
 impl RowLayout for Orbita {
     fn workspace(&self, row: WorkspaceRow<'_>, state: RowState, cx: &RowContext<'_>) -> Div {
         let density = cx.look.density;
-        let badge_lines = row.badge.as_ref().map_or(0, |badge| badge.lines(&density));
-        let text_lines = if row.lines.is_empty() {
-            if density.workspace_details() { 2 } else { 1 }
-        } else {
-            row.lines.len().max(badge_lines).max(1)
-        };
         let (branch, status, upstream) = (row.branch().unwrap_or(""), row.status(), row.upstream());
         let WorkspaceRow {
             workspace,
@@ -68,7 +62,7 @@ impl RowLayout for Orbita {
         let arrow = fold.map(|fold| {
             chevron(fold, cx.font, cx.theme)
                 .w(px(chevron_width(cx.font, density.gap())))
-                .h(px(line_height(cx.font) * text_lines as f32))
+                .h(px(line_height(cx.font)))
         });
         super::super::row::row(
             label,
