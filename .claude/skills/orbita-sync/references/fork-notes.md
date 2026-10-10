@@ -15,6 +15,8 @@ files often, so entries name symbols, not paths: find them with a search.
 | Rows under a host header | Upstream steps rows in under their host (`RowContext::nest`). An Orbita highlight starts at the row's whole indent, so with several hosts it steps in with the row; Herdr's layouts keep full-width highlights. Open for the user if they list several hosts. | 2026-10-08 |
 | Fold chevron icon | Upstream ships `icons/chevron-right.svg` and registers it. The fork's copy and its registry entry were dropped. | 2026-10-08 |
 | Bundle signing | `scripts/fork/update.sh` signs ad hoc, without the hardened runtime, so upstream's `Herdr.entitlements` is not applied: the `NSMicrophoneUsageDescription` key in upstream's `Info.plist` is what lets a pane ask for the microphone. If the script ever signs with `--options runtime`, pass the entitlements file too. | 2026-10-07 |
+| Sidebar search field | Upstream's field (`show_sidebar_search`, on by default) shows in the Orbita layout too, under the Spaces header that carries the fork's plus and hamburger. Open for the user: whether Orbita should hide it. | 2026-10-10 |
+| Daemon binding errors | The `[daemon_keybindings]` and unbound-command errors are a fork-owned `DaemonBindingError`, which the crate `Error` wraps in one transparent `DaemonBinding` variant, as upstream does for `coder` and `code_server`. Upstream's error file sits under the size limit by about a dozen lines, so new fork errors go in that enum. | 2026-10-10 |
 | Tab strip height | The fork's extra 6px was dropped. Upstream's tab row is the title bar now and is at least 34px tall, more than the fork's strip was. Open for the user: whether they want it taller still. | 2026-10-05 |
 
 ## Where the fork's code lives
@@ -25,6 +27,8 @@ these, so they cannot conflict:
 - `config/theme_overrides.rs`: the `[theme_overrides]` types, re-exported from
   the config module.
 - `palette/daemon_binding.rs`: running a daemon command by its binding label.
+- `keymap/daemon_bindings.rs`: `DaemonBindingError` and the keystroke parser
+  the `Keymap` calls for `[daemon_keybindings]`.
 - `popup_chrome.rs`: the popup panel, with `PopupLook` as the one-line entry
   point the window render calls.
 - `sidebar/layouts/orbita.rs` and `sidebar/orbita_tests.rs`. The layout file
@@ -55,7 +59,8 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   to them again.
 - **New constructions of structs the fork extended.** `RowContext` has a
   `worktree_font`, and `Theme` has `accent` and `chrome`. Upstream's new tests,
-  previews, and row builders (`append_agent_rows`) build them without those.
+  previews, and row builders (`append_agent_rows`, `append_device_agents`)
+  build them without those.
 - **New fields on structs the fork builds.** The Orbita layout rebuilds a
   `RowContext` for worktree rows and `RowBadge` through `RowBadge::new`, so a
   field upstream adds (`nest`, `mark`, `noted`) has to be forwarded there.
@@ -73,14 +78,25 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   `status_style` broke when upstream moved status colors into `Indicators`;
   the fork's `FontConfig::apply` became redundant when upstream added
   `FontSettings::apply`. Follow upstream's replacement and drop the fork's copy.
+- **Upstream adding a parameter to a function the fork calls.**
+  `HerdrWindow::reconnect` took a `cx`, which broke the fork's window tests
+  (`orbita_tests`, the daemon binding test) in test targets only, and
+  `Target::capture` took the pane's selection, which the daemon binding runner
+  fills with `plugin_selection()` like upstream's `invoke_custom_command`.
 - **Visibility after a move.** When upstream moves a type into a submodule, a
   fork method added with `pub(super)` stops being reachable. `RowBadge` methods
   need `pub(in crate::sidebar)`.
 - **Upstream tests over `LayoutMode::ALL`.** They assert a contract for every
   layout, Orbita included. Make the Orbita layout honor the contract.
-- **The 1,000-line limit.** `just check-file-size` is part of `just ci`. The
-  window render sits a few lines under it with the fork's hooks, so every hook
-  there must stay one line; move anything longer into a fork-owned module.
+- **The 1,000-line limit.** `just check-file-size` is part of `just ci`, and
+  neither the rebase nor the type-check runs it. Upstream keeps some files a
+  few lines under the limit, and its own growth can push one over with lines
+  the fork added long ago: the crate `Error` file did on 2026-10-10. Run
+  `bash scripts/check-file-size.sh` right after the last stop, and move the
+  fork's lines into a fork-owned module in the commit that added them.
+- **Gates upstream adds.** `just lint` also runs clippy with
+  `--no-default-features`, and `just ci` runs `test-mockup-wait`, which needs
+  `python3`; the usage tests need `jq`.
 - **Test placement.** Test bodies live in `tests.rs` or `tests/` topic files,
   never inline in a production file. A fork test written inline has to move.
 - **Fixtures other fork commits set up.** Dropping a fork commit can drop a line
@@ -104,8 +120,15 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   the header and wraps the footer in `when(!header_actions)`, so an upstream
   edit to what sits between them conflicts. Keep upstream's body, such as the
   wrapper that clips the pinned host header, between the fork's two hooks.
-- The test module list in `config/tests.rs` conflicts whenever upstream adds a
-  topic file next to the fork's. Keep both lines, in alphabetical order.
+- The test module list in `config/tests.rs` and the `mod` list in `main.rs`
+  conflict whenever upstream adds an entry next to the fork's. Keep both
+  lines, in alphabetical order.
+- The tail of `LayoutMode`. Upstream adds variants where `Orbita` sits, so the
+  enum, its name list, `ALL`, and every `match` arm conflict. Keep both with
+  `Orbita` last, add `Orbita` to the arms it shares (`density`, `style`, the
+  preview test), and raise the length of `ALL` by hand: that line is outside
+  the conflict blocks. `cargo fmt` spreads the `Classic` variant over four
+  lines once `Orbita` is in the enum; leave it so.
 - A fork commit that conflicts in the sidebar look file while only its own
   layout changed: take the file as the rebase has it
   (`git checkout HEAD -- <file>`) and put the commit's change in the Orbita
