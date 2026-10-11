@@ -74,6 +74,12 @@ git merged them cleanly. The type-check finds the first four; only the tests and
 - **New exhaustive matches.** `LayoutMode::Orbita` and
   `FontFace::SidebarWorktrees` are fork variants; upstream's new `match`es do
   not list them.
+- **Positional patterns over an array the fork extended.** `resolve_fonts`
+  lists the font faces in an array and upstream picks the terminal face from
+  it with a pattern such as `[_, _, terminal, _]`. The fork's
+  `sidebar_worktrees` entry stays last in that array, so upstream's positions
+  keep naming its own faces and a new pattern only needs one more `_` at the
+  end. In the middle, a pattern that still compiled would pick another face.
 - **Upstream replacing an API the fork calls.** A fork function that used
   `status_style` broke when upstream moved status colors into `Indicators`;
   the fork's `FontConfig::apply` became redundant when upstream added
@@ -93,7 +99,9 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   few lines under the limit, and its own growth can push one over with lines
   the fork added long ago: the crate `Error` file did on 2026-10-10. Run
   `bash scripts/check-file-size.sh` right after the last stop, and move the
-  fork's lines into a fork-owned module in the commit that added them.
+  fork's lines into a fork-owned module in the commit that added them. That
+  file held 999 lines on 2026-10-11 with only the fork's two-line
+  `DaemonBinding` variant left in it, so it is the first place to look.
 - **Gates upstream adds.** `just lint` also runs clippy with
   `--no-default-features`, and `just ci` runs `test-mockup-wait`, which needs
   `python3`; the usage tests need `jq`.
