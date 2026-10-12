@@ -16,7 +16,10 @@ files often, so entries name symbols, not paths: find them with a search.
 | Fold chevron icon | Upstream ships `icons/chevron-right.svg` and registers it. The fork's copy and its registry entry were dropped. | 2026-10-08 |
 | Bundle signing | `scripts/fork/update.sh` signs ad hoc, without the hardened runtime, so upstream's `Herdr.entitlements` is not applied: the `NSMicrophoneUsageDescription` key in upstream's `Info.plist` is what lets a pane ask for the microphone. If the script ever signs with `--options runtime`, pass the entitlements file too. | 2026-10-07 |
 | Sidebar search field | Upstream's field (`show_sidebar_search`, on by default) shows in the Orbita layout too, under the Spaces header that carries the fork's plus and hamburger. Open for the user: whether Orbita should hide it. | 2026-10-10 |
-| Daemon binding errors | The `[daemon_keybindings]` and unbound-command errors are a fork-owned `DaemonBindingError`, which the crate `Error` wraps in one transparent `DaemonBinding` variant, as upstream does for `coder` and `code_server`. Upstream's error file sits under the size limit by about a dozen lines, so new fork errors go in that enum. | 2026-10-10 |
+| Daemon binding errors | The `[daemon_keybindings]` and unbound-command errors are a fork-owned `DaemonBindingError`, which the crate `Error` wraps in one transparent `DaemonBinding` variant, as upstream does for `coder` and `code_server`. New fork errors go in that enum. | 2026-10-10 |
+| Window backdrop | Upstream's `[backdrop]` paints every panel with its own color at the backdrop's opacity. The fork's `chrome` override replaces `theme.surface`, so it gets the same treatment with no code of its own. `titlebar::render` keeps upstream's signature; the tinted or flat choice is the `style` argument of `titlebar::bar`. | 2026-10-11 |
+| Shortcut editor | Upstream's Herdr > Keyboard Shortcuts writes `[keybindings]`. It validates a draft through `Keymap::with_edited_overrides`, which carries the loaded `[daemon_keybindings]`, so it refuses a key the table holds instead of saving a config that no longer loads. Any new upstream surface that writes keybindings needs the same call. | 2026-10-11 |
+| "Herdr UI" in messages | Upstream names the client "Herdr UI" in errors, notes, and dialogs. The fork's build-set name covers the window title, process name, application menu, and About box only, so Orbita's messages say "Herdr UI". Open for the user. | 2026-10-11 |
 | Tab strip height | The fork's extra 6px was dropped. Upstream's tab row is the title bar now and is at least 34px tall, more than the fork's strip was. Open for the user: whether they want it taller still. | 2026-10-05 |
 
 ## Where the fork's code lives
@@ -27,8 +30,8 @@ these, so they cannot conflict:
 - `config/theme_overrides.rs`: the `[theme_overrides]` types, re-exported from
   the config module.
 - `palette/daemon_binding.rs`: running a daemon command by its binding label.
-- `keymap/daemon_bindings.rs`: `DaemonBindingError` and the keystroke parser
-  the `Keymap` calls for `[daemon_keybindings]`.
+- `keymap/daemon_bindings.rs`: `DaemonBindingError`, the keystroke parser the
+  `Keymap` calls for `[daemon_keybindings]`, and `with_edited_overrides`.
 - `popup_chrome.rs`: the popup panel, with `PopupLook` as the one-line entry
   point the window render calls.
 - `sidebar/layouts/orbita.rs` and `sidebar/orbita_tests.rs`. The layout file
@@ -36,14 +39,16 @@ these, so they cannot conflict:
   sidebar render call: `mark_nested`, `mark_blocked`, `tree_color`,
   `tree_padding`, `header_actions`, `primary_chip`, `counts_x`.
 - Topic test files: `config/tests/{theme_overrides,sidebar_worktrees,daemon_keybindings}.rs`,
-  `keymap/tests/daemon_bindings.rs`, `titlebar/orbita_git_button_tests.rs`.
+  `keymap/tests/daemon_bindings.rs`, `titlebar/orbita_git_button_tests.rs`,
+  `menu/shortcut_editor/tests/daemon_bindings.rs`.
 
 What still has to live in upstream's files: the `Orbita` and `SidebarWorktrees`
 variants, the `orbita` flag on `SidebarMetrics` with its arm in
 `SidebarMetrics::for_mode`, `corners::ROW`, the `marked` line in
 `SidebarLook::highlight`, the one-line hooks in the shared sidebar `row`, the
-`Theme` fields and accessors, the `Keymap` daemon bindings, and one-line hooks
-in the window render.
+`Theme` fields and accessors, the `Keymap` daemon bindings, the validation
+call in the shortcut editor, the `style` argument of `titlebar::bar`, and
+one-line hooks in the window render.
 
 ## Breaks without a conflict
 
@@ -51,9 +56,9 @@ After a stop, these fail to compile, to pass tests, or to pass a gate although
 git merged them cleanly. The type-check finds the first four; only the tests and
 `just ci` find the rest.
 
-- **New callers of functions the fork changed.** `titlebar::render` takes a
-  `&Theme` in the fork, and the shared sidebar `row` takes the fork's `tokens`
-  list. Every window or layout upstream adds calls the old shape.
+- **New callers of functions the fork changed.** `titlebar::bar` takes the
+  title bar style in the fork, and the shared sidebar `row` takes the fork's
+  `tokens` list. Every window or layout upstream adds calls the old shape.
   `SidebarLook::highlight` and `SidebarLook::mark` keep upstream's signatures:
   the Orbita highlight is nested by `mark_nested`, so do not add parameters
   to them again.
@@ -84,6 +89,10 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   `status_style` broke when upstream moved status colors into `Indicators`;
   the fork's `FontConfig::apply` became redundant when upstream added
   `FontSettings::apply`. Follow upstream's replacement and drop the fork's copy.
+  `CommandInfo` lost its `shortcuts` field to per-platform profiles
+  (`default_shortcuts()`), which the daemon binding check reads; a fork test
+  that names a native default wraps it in `platform_default`, since Linux
+  binds other keys.
 - **Upstream adding a parameter to a function the fork calls.**
   `HerdrWindow::reconnect` took a `cx`, which broke the fork's window tests
   (`orbita_tests`, the daemon binding test) in test targets only, and
@@ -99,12 +108,17 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   few lines under the limit, and its own growth can push one over with lines
   the fork added long ago: the crate `Error` file did on 2026-10-10. Run
   `bash scripts/check-file-size.sh` right after the last stop, and move the
-  fork's lines into a fork-owned module in the commit that added them. That
-  file held 999 lines on 2026-10-11 with only the fork's two-line
-  `DaemonBinding` variant left in it, so it is the first place to look.
+  fork's lines into a fork-owned module in the commit that added them.
 - **Gates upstream adds.** `just lint` also runs clippy with
   `--no-default-features`, and `just ci` runs `test-mockup-wait`, which needs
   `python3`; the usage tests need `jq`.
+- **Upstream's `login_env` timeout test.** On this machine
+  `timeout_kills_shell_and_descendant_group` failed in the first `just ci`
+  after each of three rebases and passed in every rerun and alone: it gives a
+  shell one second to start, which is lost while the machine is still busy
+  from the rebuild. The fork does not touch that file. Run
+  `cargo test --locked --workspace` once before the gate so the gate's own run
+  is the second, and report the failure as upstream's instead of editing it.
 - **Test placement.** Test bodies live in `tests.rs` or `tests/` topic files,
   never inline in a production file. A fork test written inline has to move.
 - **Fixtures other fork commits set up.** Dropping a fork commit can drop a line
