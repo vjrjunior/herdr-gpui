@@ -20,6 +20,8 @@ files often, so entries name symbols, not paths: find them with a search.
 | Window backdrop | Upstream's `[backdrop]` paints every panel with its own color at the backdrop's opacity. The fork's `chrome` override replaces `theme.surface`, so it gets the same treatment with no code of its own. `titlebar::render` keeps upstream's signature; the tinted or flat choice is the `style` argument of `titlebar::bar`. | 2026-10-11 |
 | Shortcut editor | Upstream's Herdr > Keyboard Shortcuts writes `[keybindings]`. It validates a draft through `Keymap::with_edited_overrides`, which carries the loaded `[daemon_keybindings]`, so it refuses a key the table holds instead of saving a config that no longer loads. Any new upstream surface that writes keybindings needs the same call. | 2026-10-11 |
 | "Herdr UI" in messages | Upstream names the client "Herdr UI" in errors, notes, and dialogs. The fork's build-set name covers the window title, process name, application menu, and About box only, so Orbita's messages say "Herdr UI". Open for the user. | 2026-10-11 |
+| Terminal-only font keys | Upstream's `[terminal]`-only keys (`line_height`, `weight`) are refused for `[sidebar_worktrees]` as for `[sidebar]`, `[tabs]`, and `[ui]`: the fork's face is in the list `Config` runs through `reject_terminal_keys`, so the key is reported in `unknown_keys` and ignored. A terminal-only key upstream adds to that function needs no fork code. | 2026-10-13 |
+| Repository icons | Upstream's `show_repository_icons` applies to the Orbita layout with no fork code: the layout hands the shared row the icon its context carries. | 2026-10-13 |
 | Tab strip height | The fork's extra 6px was dropped. Upstream's tab row is the title bar now and is at least 34px tall, more than the fork's strip was. Open for the user: whether they want it taller still. | 2026-10-05 |
 
 ## Where the fork's code lives
@@ -47,8 +49,9 @@ variants, the `orbita` flag on `SidebarMetrics` with its arm in
 `SidebarMetrics::for_mode`, `corners::ROW`, the `marked` line in
 `SidebarLook::highlight`, the one-line hooks in the shared sidebar `row`, the
 `Theme` fields and accessors, the `Keymap` daemon bindings, the validation
-call in the shortcut editor, the `style` argument of `titlebar::bar`, and
-one-line hooks in the window render.
+call in the shortcut editor, the `sidebar_worktrees` entry in the list of
+faces that take no terminal-only keys, the `style` argument of
+`titlebar::bar`, and one-line hooks in the window render.
 
 ## Breaks without a conflict
 
@@ -109,6 +112,9 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   the fork added long ago: the crate `Error` file did on 2026-10-10. Run
   `bash scripts/check-file-size.sh` right after the last stop, and move the
   fork's lines into a fork-owned module in the commit that added them.
+  The palette file stood at 999 lines after the 2026-10-13 sync, one of them
+  the fork's `mod daemon_binding;`, which has to stay there because the
+  module reads the palette's private items.
 - **Gates upstream adds.** `just lint` also runs clippy with
   `--no-default-features`, and `just ci` runs `test-mockup-wait`, which needs
   `python3`; the usage tests need `jq`.
@@ -142,9 +148,12 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   the header and wraps the footer in `when(!header_actions)`, so an upstream
   edit to what sits between them conflicts. Keep upstream's body, such as the
   wrapper that clips the pinned host header, between the fork's two hooks.
-- The test module list in `config/tests.rs` and the `mod` list in `main.rs`
-  conflict whenever upstream adds an entry next to the fork's. Keep both
-  lines, in alphabetical order.
+- The test module list in `config/tests.rs` and the `mod` lists in `main.rs`
+  and the palette file conflict whenever upstream adds an entry next to the
+  fork's. Keep both lines, in alphabetical order.
+- The `pane_keys` field of `Keymap`. The fork's `daemon` field sits right
+  under it, so an upstream change to that field or its doc comment conflicts.
+  Take upstream's lines and keep `daemon` below them.
 - The tail of `LayoutMode`. Upstream adds variants where `Orbita` sits, so the
   enum, its name list, `ALL`, and every `match` arm conflict. Keep both with
   `Orbita` last, add `Orbita` to the arms it shares (`density`, `style`, the
