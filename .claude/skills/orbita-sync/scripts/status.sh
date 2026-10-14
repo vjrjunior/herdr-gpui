@@ -6,8 +6,9 @@ usage() {
 Usage: status.sh [--no-fetch]
 
 Read-only picture of the fork against upstream: what upstream added, which
-files would conflict, which fork commits would stop a rebase, and where the
-local clone stands. Changes nothing but the remote-tracking refs it fetches.
+files would conflict, which fork commits would stop a rebase, where the
+local clone stands, and whether the disk has room for the gates. Changes
+nothing but the remote-tracking refs it fetches.
 
   --no-fetch   Use the remote-tracking refs already present
 
@@ -26,6 +27,7 @@ for arg in "$@"; do
 done
 
 branch="${FORK_BRANCH:-vjr}"
+scripts=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "$(git rev-parse --show-toplevel)"
 
 if [ "$fetch" = 1 ]; then
@@ -56,6 +58,12 @@ for ref in main "$branch"; do
             awk -v ref="origin/$ref" '{ printf "%-14s %s commits only on origin, %s only local\n", ref, $1, $2 }'
     fi
 done
+
+if [ -x "$scripts/cache.sh" ]; then
+    echo
+    echo "== Build cache and disk"
+    "$scripts/cache.sh"
+fi
 
 if [ "$behind" = 0 ]; then
     echo

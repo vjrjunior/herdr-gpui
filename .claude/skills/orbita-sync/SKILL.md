@@ -37,11 +37,14 @@ needs on `vjr` and on this machine:
   rule in step 2;
 - `fixup!` commits folded back in with an autosquash rebase (step 4);
 - one `chore: update fork sync notes` commit for this skill's own files (step 5);
-- running the gates and replacing `/Applications/Orbita.app`.
+- running the gates and replacing `/Applications/Orbita.app`;
+- trimming this checkout's build cache with `scripts/cache.sh --trim`
+  (steps 1 and 6).
 
 It is not a go-ahead for: pushing (unless `push` was given), editing the user's
-files under `~/.config/herdr/`, restarting the running app, or touching Herdr
-itself or any sibling checkout. Report those as things the user can do.
+files under `~/.config/herdr/`, restarting the running app, clearing other
+checkouts' build caches or `~/.cargo`, or touching Herdr itself or any sibling
+checkout. Report those as things the user can do.
 
 ## Step 1: Look before touching anything
 
@@ -53,13 +56,21 @@ It fetches and prints, read-only: how far `vjr` is behind; every upstream change
 with its size and a count by type; upstream commits that touch the rules, gates,
 or build; the config keys and defaults upstream changed; the files a merge would
 conflict in, with the commits behind them on both sides; the files both sides
-changed that merge cleanly; and a preview of which fork commits would stop the
-rebase.
+changed that merge cleanly; a preview of which fork commits would stop the
+rebase; and how large this checkout's build cache is and how much disk is free.
 
-- **Up to date**: say so in one line and stop.
+- **Up to date**: say so in one line and stop. If the build cache line says
+  `OVER` and this is not a `check` run, run
+  `.claude/skills/orbita-sync/scripts/cache.sh --trim` first and say what it
+  freed.
 - **Working tree dirty**: stop and list what is uncommitted. `scripts/fork/update.sh`
   refuses a dirty tree, and stashing someone's work to get past that is not
   yours to do. Untracked files do not count for either script.
+- **Disk short of room**: the free disk line says `LOW` when less than the
+  40 GB a sync needs is left. Run `.claude/skills/orbita-sync/scripts/cache.sh --trim`
+  before step 3. On a full disk the gates fail at the linker
+  (`linking with cc failed`), which reads like a code error and costs a whole
+  gate run.
 - Otherwise read `.claude/skills/orbita-sync/references/fork-notes.md` now. It
   holds the decisions earlier syncs already made and the places that break
   without a conflict.
@@ -125,7 +136,8 @@ the rebase and what else would break without a conflict.>
 with the reason. Mark real product choices as the user's to make.>
 
 ## Size of the job
-<Stops expected, which ones are heavy, and what needs a look in the app.>
+<Stops expected, which ones are heavy, what needs a look in the app, and
+whether the disk has room for the gates.>
 ```
 
 ## Step 3: Start the sync
@@ -146,7 +158,7 @@ replays the commits below them, `.claude/skills/orbita-sync/` is missing from th
 working tree. Copy the helpers out before they disappear:
 
 ```sh
-mkdir -p <scratch>/orbita-sync && cp .claude/skills/orbita-sync/scripts/*.py <scratch>/orbita-sync/
+mkdir -p <scratch>/orbita-sync && cp .claude/skills/orbita-sync/scripts/* <scratch>/orbita-sync/
 ```
 
 and run them from there during step 4.
@@ -276,7 +288,8 @@ Keep that file to what still holds, and delete entries upstream made obsolete.
 
 ## Step 6: Gates and install
 
-Skip this step if step 3 ran through without stopping: it already did all of it.
+If step 3 ran through without stopping, it already ran the gates and installed
+the app: go straight to trimming the cache at the end of this step.
 
 ```sh
 just check-commits main
@@ -289,12 +302,27 @@ Read the result from its output: the test totals, any failure, and the
 `Installed ... (<sha> on vjr)` line.
 
 - A failure is yours to fix: fold the fix into the fork commit that caused it
-  and rerun. Do not report a sync as done with a red gate.
+  and rerun. Do not report a sync as done with a red gate. A failure at the
+  linker is more often a full disk than the code: check the free space first.
 - If the port touched a `cfg` gate, also run `just lint-linux` and
   `just lint-windows`; a macOS run cannot see those. If it did not, say in the
   report that they were not run.
 - The script only notes that Orbita is running. The new build takes effect when
   the user restarts the app; say so rather than restarting it.
+
+Once the app is installed, nothing needs the build cache until the next sync.
+Trim it, and put what it freed in the report:
+
+```sh
+.claude/skills/orbita-sync/scripts/cache.sh --trim
+```
+
+It always removes the incremental caches, which the rebase leaves mostly stale
+and step 4's per-commit checks multiply, and runs `cargo clean` when `target/`
+is still over 60 GB or less than 40 GB of disk is free. Untrimmed, the cache
+reached 166 GB and filled the disk; a clean costs the next sync a few minutes
+of compiling instead. Never trim while a build or the gates run
+in the background: they write to the same folder.
 
 ## Step 7: Work out what changes for this user
 
@@ -342,7 +370,8 @@ these sections, translated, and leave out any that would be empty:
 
 ```markdown
 <One or two sentences: where vjr stands, the gate result with the test count,
-which commit is installed, and whether anything was pushed.>
+which commit is installed, whether anything was pushed, and what the cache
+trim freed.>
 
 ## What came from upstream
 <N changes. Group by what the user would notice: terminal, sidebar, keyboard,
