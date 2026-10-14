@@ -15,13 +15,14 @@ files often, so entries name symbols, not paths: find them with a search.
 | Rows under a host header | Upstream steps rows in under their host (`RowContext::nest`). An Orbita highlight starts at the row's whole indent, so with several hosts it steps in with the row; Herdr's layouts keep full-width highlights. Open for the user if they list several hosts. | 2026-10-08 |
 | Fold chevron icon | Upstream ships `icons/chevron-right.svg` and registers it. The fork's copy and its registry entry were dropped. | 2026-10-08 |
 | Bundle signing | `scripts/fork/update.sh` signs ad hoc, without the hardened runtime, so upstream's `Herdr.entitlements` is not applied: the `NSMicrophoneUsageDescription` key in upstream's `Info.plist` is what lets a pane ask for the microphone. If the script ever signs with `--options runtime`, pass the entitlements file too. | 2026-10-07 |
-| Sidebar search field | Upstream's field (`show_sidebar_search`, on by default) shows in the Orbita layout too, under the Spaces header that carries the fork's plus and hamburger. Open for the user: whether Orbita should hide it. | 2026-10-10 |
+| Sidebar search field | Upstream made the field the Spaces heading (`search_heading`, on with `show_sidebar_search`). The Orbita layout keeps it and hangs its plus and hamburger at the heading's right, beside the field; with search off they sit on the plain header. The fork's header test measures the buttons' right margin against the field's left inset. Open for the user: whether Orbita should hide the field. | 2026-10-14 |
 | Daemon binding errors | The `[daemon_keybindings]` and unbound-command errors are a fork-owned `DaemonBindingError`, which the crate `Error` wraps in one transparent `DaemonBinding` variant, as upstream does for `coder` and `code_server`. New fork errors go in that enum. | 2026-10-10 |
 | Window backdrop | Upstream's `[backdrop]` paints every panel with its own color at the backdrop's opacity. The fork's `chrome` override replaces `theme.surface`, so it gets the same treatment with no code of its own. `titlebar::render` keeps upstream's signature; the tinted or flat choice is the `style` argument of `titlebar::bar`. | 2026-10-11 |
 | Shortcut editor | Upstream's Herdr > Keyboard Shortcuts writes `[keybindings]`. It validates a draft through `Keymap::with_edited_overrides`, which carries the loaded `[daemon_keybindings]`, so it refuses a key the table holds instead of saving a config that no longer loads. Any new upstream surface that writes keybindings needs the same call. | 2026-10-11 |
 | "Herdr UI" in messages | Upstream names the client "Herdr UI" in errors, notes, and dialogs. The fork's build-set name covers the window title, process name, application menu, and About box only, so Orbita's messages say "Herdr UI". Open for the user. | 2026-10-11 |
 | Terminal-only font keys | Upstream's `[terminal]`-only keys (`line_height`, `weight`) are refused for `[sidebar_worktrees]` as for `[sidebar]`, `[tabs]`, and `[ui]`: the fork's face is in the list `Config` runs through `reject_terminal_keys`, so the key is reported in `unknown_keys` and ignored. A terminal-only key upstream adds to that function needs no fork code. | 2026-10-13 |
-| Repository icons | Upstream's `show_repository_icons` applies to the Orbita layout with no fork code: the layout hands the shared row the icon its context carries. | 2026-10-13 |
+| Repository and device icons | Upstream's `show_repository_icons` and `show_device_icons` apply to the Orbita layout with no fork code: the layout hands the shared row the icon its context carries, and `LayoutMode::device_icons` leaves out only Orca and Minimal. | 2026-10-14 |
+| Device themes | `[theme_overrides]` apply to the app theme only: `Config::theme_with_directories` runs upstream's shared `resolve` and then the overrides, for every theme source, Follow Herdr included. A device's `theme` (`theme_named`) paints only the terminal and takes none. | 2026-10-14 |
 | Tab strip height | The fork's extra 6px was dropped. Upstream's tab row is the title bar now and is at least 34px tall, more than the fork's strip was. Open for the user: whether they want it taller still. | 2026-10-05 |
 
 ## Where the fork's code lives
@@ -50,8 +51,10 @@ variants, the `orbita` flag on `SidebarMetrics` with its arm in
 `SidebarLook::highlight`, the one-line hooks in the shared sidebar `row`, the
 `Theme` fields and accessors, the `Keymap` daemon bindings, the validation
 call in the shortcut editor, the `sidebar_worktrees` entry in the list of
-faces that take no terminal-only keys, the `style` argument of
-`titlebar::bar`, and one-line hooks in the window render.
+faces that take no terminal-only keys, `menu.svg` in the sorted
+`embedded_icons!` table with the `branch` and `branch_dot` helpers after it,
+the `style` argument of `titlebar::bar`, and one-line hooks in the window
+render.
 
 ## Breaks without a conflict
 
@@ -112,12 +115,18 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   the fork added long ago: the crate `Error` file did on 2026-10-10. Run
   `bash scripts/check-file-size.sh` right after the last stop, and move the
   fork's lines into a fork-owned module in the commit that added them.
-  The palette file stood at 999 lines after the 2026-10-13 sync, one of them
-  the fork's `mod daemon_binding;`, which has to stay there because the
-  module reads the palette's private items.
+  The crate `Error` file stood at 994 lines after the 2026-10-14 sync, two of
+  them the fork's transparent `DaemonBinding` variant.
 - **Gates upstream adds.** `just lint` also runs clippy with
   `--no-default-features`, and `just ci` runs `test-mockup-wait`, which needs
-  `python3`; the usage tests need `jq`.
+  `python3`; the usage tests need `jq`. `just check-sorted` refuses a
+  `keep-sorted` region out of order, such as the `embedded_icons!` table: a
+  fork entry in one goes in its sorted place, not at the end.
+- **Upstream tests that read this machine's config.** The device theme
+  picker tests list themes from the real config root, and
+  `~/.config/ghostty/themes` here holds themes CI does not have, so two of
+  them fail on this machine and pass with an empty `XDG_CONFIG_HOME`. Run the
+  gates as CI does: `XDG_CONFIG_HOME=<empty dir> scripts/fork/update.sh --no-sync`.
 - **Upstream's `login_env` timeout test.** On this machine
   `timeout_kills_shell_and_descendant_group` failed in the first `just ci`
   after each of three rebases and passed in every rerun and alone: it gives a
@@ -145,7 +154,8 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   out, git reports the whole old block as the conflict. Take upstream's side
   and replay the fork's hunks with `port_hunks.py`.
 - The Spaces section of `render_sidebar`: the fork hangs `header_actions` on
-  the header and wraps the footer in `when(!header_actions)`, so an upstream
+  whatever upstream's heading chain returns (the search field or the plain
+  header) and wraps the footer in `when(!header_actions)`, so an upstream
   edit to what sits between them conflicts. Keep upstream's body, such as the
   wrapper that clips the pinned host header, between the fork's two hooks.
 - The test module list in `config/tests.rs` and the `mod` lists in `main.rs`
