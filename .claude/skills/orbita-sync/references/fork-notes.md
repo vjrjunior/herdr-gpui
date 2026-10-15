@@ -23,6 +23,7 @@ files often, so entries name symbols, not paths: find them with a search.
 | Terminal-only font keys | Upstream's `[terminal]`-only keys (`line_height`, `weight`) are refused for `[sidebar_worktrees]` as for `[sidebar]`, `[tabs]`, and `[ui]`: the fork's face is in the list `Config` runs through `reject_terminal_keys`, so the key is reported in `unknown_keys` and ignored. A terminal-only key upstream adds to that function needs no fork code. | 2026-10-13 |
 | Repository and device icons | Upstream's `show_repository_icons` and `show_device_icons` apply to the Orbita layout with no fork code: the layout hands the shared row the icon its context carries, and `LayoutMode::device_icons` leaves out only Orca and Minimal. | 2026-10-14 |
 | Device themes | `[theme_overrides]` apply to the app theme only: `Config::theme_with_directories` runs upstream's shared `resolve` and then the overrides, for every theme source, Follow Herdr included. A device's `theme` (`theme_named`) paints only the terminal and takes none. | 2026-10-14 |
+| Blocked bar and Edge rail | Upstream's `status_icons = "rail"` draws a bar on the leading edge of working, done, and blocked rows in every layout (`Indicators::rail`, added once in `Cell::row`). The Orbita layout's own blocked bar was dropped for it: the user's `config-gpui.local.toml` sets `status_icons = "rail"`. | 2026-10-15 |
 | Tab strip height | The fork's extra 6px was dropped. Upstream's tab row is the title bar now and is at least 34px tall, more than the fork's strip was. Open for the user: whether they want it taller still. | 2026-10-05 |
 
 ## Where the fork's code lives
@@ -39,7 +40,7 @@ these, so they cannot conflict:
   point the window render calls.
 - `sidebar/layouts/orbita.rs` and `sidebar/orbita_tests.rs`. The layout file
   also holds the Orbita preset and the look methods the shared row and the
-  sidebar render call: `mark_nested`, `mark_blocked`, `tree_color`,
+  sidebar render call: `mark_nested`, `tree_color`,
   `tree_padding`, `header_actions`, `primary_chip`, `counts_x`.
 - Topic test files: `config/tests/{theme_overrides,sidebar_worktrees,daemon_keybindings}.rs`,
   `keymap/tests/daemon_bindings.rs`, `titlebar/orbita_git_button_tests.rs`,
@@ -127,13 +128,16 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   `~/.config/ghostty/themes` here holds themes CI does not have, so two of
   them fail on this machine and pass with an empty `XDG_CONFIG_HOME`. Run the
   gates as CI does: `XDG_CONFIG_HOME=<empty dir> scripts/fork/update.sh --no-sync`.
-- **Upstream's `login_env` timeout test.** On this machine
-  `timeout_kills_shell_and_descendant_group` failed in the first `just ci`
-  after each of three rebases and passed in every rerun and alone: it gives a
-  shell one second to start, which is lost while the machine is still busy
-  from the rebuild. The fork does not touch that file. Run
-  `cargo test --locked --workspace` once before the gate so the gate's own run
-  is the second, and report the failure as upstream's instead of editing it.
+- **Upstream's process-timing tests.** On this machine
+  `timeout_kills_shell_and_descendant_group` (`login_env`) fails in the first
+  runs after a rebuild and passes alone: it gives a fresh shell script one
+  second to start, which is lost while `syspolicyd` assesses the new
+  executables. On 2026-10-15 it failed in a warm-up `cargo test` and the next
+  gate, the brew `relaunch_retries_then_alerts_when_open_keeps_failing` test
+  timed out beside it in the gate after that, and the third gate passed. The
+  fork touches neither file. A warm-up run does not reliably help; rerun the
+  gate until `syspolicyd` settles, and report the failures as upstream's
+  instead of editing them.
 - **Test placement.** Test bodies live in `tests.rs` or `tests/` topic files,
   never inline in a production file. A fork test written inline has to move.
 - **Fixtures other fork commits set up.** Dropping a fork commit can drop a line
@@ -175,6 +179,21 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   (`git checkout HEAD -- <file>`) and put the commit's change in the Orbita
   layout's file. `pick.py FILE b` keeps both sides of a block, so when both
   rewrote the same line, delete the stale one by hand.
+- A `fixup!` for an early fork commit that edits the Orbita README paragraph
+  stops at every later fork commit that rewords or rewraps that paragraph.
+  Resolve each stop as the later commit's text plus the fixup's words, then
+  check that `git diff <fixup commit> vjr` is empty: the autosquash must end
+  on the tree the fixup was written against.
+- Autosquash matches a `fixup!` by subject, and every notes commit is
+  `chore: update fork sync notes`, so a fixup for this sync's notes commit
+  folds into the oldest one instead. When it is the tip, fold it by hand:
+  commit the fix, `git reset --soft HEAD~2`, and `git commit -C <notes sha>`.
+- `rerere` replays a resolution it recorded earlier whenever the same
+  conflict returns, even when a dropped commit made it wrong: it once
+  restored a `mod` line for a deleted test file. When a second rebase drops
+  or rewrites a commit resolved earlier, run it with
+  `git -c rerere.enabled=false rebase ...`, and read every file git reports
+  as resolved before continuing.
 - After the last stop, type-check every commit, not only the tip:
   `git rebase -x '<fmt check> && <cargo check>' main`. A commit that applied
   cleanly between two stops can still be the one that does not compile or is
