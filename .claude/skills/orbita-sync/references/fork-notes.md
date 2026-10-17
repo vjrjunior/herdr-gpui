@@ -25,6 +25,8 @@ files often, so entries name symbols, not paths: find them with a search.
 | Device themes | `[theme_overrides]` apply to the app theme only: `Config::theme_with_directories` runs upstream's shared `resolve` and then the overrides, for every theme source, Follow Herdr included. A device's `theme` (`theme_named`) paints only the terminal and takes none. | 2026-10-14 |
 | Blocked bar and Edge rail | Upstream's `status_icons = "rail"` draws a bar on the leading edge of working, done, and blocked rows in every layout (`Indicators::rail`, added once in `Cell::row`). The Orbita layout's own blocked bar was dropped for it: the user's `config-gpui.local.toml` sets `status_icons = "rail"`. | 2026-10-15 |
 | Tab strip height | The fork's extra 6px was dropped. Upstream's tab row is the title bar now and is at least 34px tall, more than the fork's strip was. Open for the user: whether they want it taller still. | 2026-10-05 |
+| Trunk under a note | Upstream carries a worktree child's tree guide on past its note and ports lines (`RowLayout::trunk_below`), and a test asks it of every layout that draws a tree. The Orbita layout returns upstream's `row::trunk_below`, which reads `tree_padding` and `tree_color` from the look like the row's own guide, so the trunk matches the Orbita guide's width and color. | 2026-10-16 |
+| Worktree font in Settings | Upstream's rebuilt Settings window lists four faces (`FACES`), and the fork's `SidebarWorktrees` is not one of them, as it was not before: `[sidebar_worktrees]` is set in the config file only. The Fonts page's `size_control` and `specimen_title` still match on every `FontFace`, so they carry arms for it. | 2026-10-16 |
 
 ## Where the fork's code lives
 
@@ -49,7 +51,8 @@ these, so they cannot conflict:
 What still has to live in upstream's files: the `Orbita` and `SidebarWorktrees`
 variants, the `orbita` flag on `SidebarMetrics` with its arm in
 `SidebarMetrics::for_mode`, `corners::ROW`, the `marked` line in
-`SidebarLook::highlight`, the one-line hooks in the shared sidebar `row`, the
+`SidebarLook::highlight`, the one-line hooks in the shared sidebar `row` and
+`row::trunk_below`, the
 `Theme` fields and accessors, the `Keymap` daemon bindings, the validation
 call in the shortcut editor, the `sidebar_worktrees` entry in the list of
 faces that take no terminal-only keys, `menu.svg` in the sorted
@@ -85,7 +88,8 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   `git blame` each failing line after the rebase and fix up each owner.
 - **New exhaustive matches.** `LayoutMode::Orbita` and
   `FontFace::SidebarWorktrees` are fork variants; upstream's new `match`es do
-  not list them.
+  not list them. The Settings pages are the usual source: the Fonts page's
+  control ids and specimen titles broke on 2026-10-16.
 - **Positional patterns over an array the fork extended.** `resolve_fonts`
   lists the font faces in an array and upstream picks the terminal face from
   it with a pattern such as `[_, _, terminal, _]`. The fork's
@@ -116,7 +120,7 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   the fork added long ago: the crate `Error` file did on 2026-10-10. Run
   `bash scripts/check-file-size.sh` right after the last stop, and move the
   fork's lines into a fork-owned module in the commit that added them.
-  The crate `Error` file stood at 994 lines after the 2026-10-14 sync, two of
+  The crate `Error` file stood at 990 lines after the 2026-10-16 sync, two of
   them the fork's transparent `DaemonBinding` variant.
 - **Gates upstream adds.** `just lint` also runs clippy with
   `--no-default-features`, and `just ci` runs `test-mockup-wait`, which needs
@@ -152,6 +156,14 @@ git merged them cleanly. The type-check finds the first four; only the tests and
 - `Keymap` and the config `Settings` struct gain fields on both sides. Keep
   both; `with_overrides` must stay available outside tests because upstream
   builds server keymaps with it, and it forwards to `with_daemon_bindings`.
+- Sorted shared structs. Since 2026-10-16 `Config`, its `Default`, the
+  private `Settings`, and the crate `Error` enum sit in `keep-sorted` regions,
+  so every fork field conflicts as a block that also holds upstream's
+  reordered lines. Take upstream's side and put the fork's lines back in
+  their sorted place: `daemon_keybindings` before `daytona`,
+  `sidebar_worktrees` after `sidebar_style`, `theme_overrides` after
+  `theme`, and `DaemonBinding` before `DaemonCancelled`. Then run
+  `python3 scripts/check-sorted.py`.
 - Fork tests that asserted an unknown config key is rejected fail now: upstream
   ignores unknown keys and reports them in `unknown_keys`.
 - When upstream splits a file the fork also edits, or moves its test module
@@ -170,8 +182,8 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   Take upstream's lines and keep `daemon` below them.
 - The tail of `LayoutMode`. Upstream adds variants where `Orbita` sits, so the
   enum, its name list, `ALL`, and every `match` arm conflict. Keep both with
-  `Orbita` last, add `Orbita` to the arms it shares (`density`, `style`, the
-  preview test), and raise the length of `ALL` by hand: that line is outside
+  `Orbita` last, add `Orbita` to the arms it shares (`density`, `style`), and
+  raise the length of `ALL` by hand: that line is outside
   the conflict blocks. `cargo fmt` spreads the `Classic` variant over four
   lines once `Orbita` is in the enum; leave it so.
 - A fork commit that conflicts in the sidebar look file while only its own
