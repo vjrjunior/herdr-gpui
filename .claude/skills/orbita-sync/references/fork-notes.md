@@ -23,7 +23,8 @@ files often, so entries name symbols, not paths: find them with a search.
 | Terminal-only font keys | Upstream's `[terminal]`-only keys (`line_height`, `weight`) are refused for `[sidebar_worktrees]` as for `[sidebar]`, `[tabs]`, and `[ui]`: the fork's face is in the list `Config` runs through `reject_terminal_keys`, so the key is reported in `unknown_keys` and ignored. A terminal-only key upstream adds to that function needs no fork code. | 2026-10-13 |
 | Repository and device icons | Upstream's `show_repository_icons` and `show_device_icons` apply to the Orbita layout with no fork code: the layout hands the shared row the icon its context carries, and `LayoutMode::device_icons` leaves out only Orca and Minimal. | 2026-10-14 |
 | Device themes | `[theme_overrides]` apply to the app theme only: `Config::theme_with_directories` runs upstream's shared `resolve` and then the overrides, for every theme source, Follow Herdr included. A device's `theme` (`theme_named`) paints only the terminal and takes none. | 2026-10-14 |
-| Blocked bar and Edge rail | Upstream's `status_icons = "rail"` draws a bar on the leading edge of working, done, and blocked rows in every layout (`Indicators::rail`, added once in `Cell::row`). The Orbita layout's own blocked bar was dropped for it: the user's `config-gpui.local.toml` sets `status_icons = "rail"`. | 2026-10-15 |
+| Blocked bar and Edge rail | Upstream's `edge_rail` (Settings > Appearance > Indicators) draws a bar on the leading edge of working, done, and blocked rows in every layout (`Indicators::rail`, added once in `Cell::row`); the retired `status_icons = "rail"` reads as Outline with `edge_rail` on. The Orbita layout's own blocked bar was dropped for it. Since 2026-10-18 the user's configs set neither key, and the app no longer reads Herdr's `ui.status_indicators`, so rows draw upstream's default Dots. | 2026-10-15 |
+| Theme accent | Upstream's `Theme::accent` holds a desktop theme's own accent (Omarchy), and `system_accent` the Windows one, which wins. The fork's `[theme_overrides] accent` writes into upstream's `accent`, and only when set, so a desktop accent survives without a pin. `Theme` keeps only the fork's `chrome` field. | 2026-10-18 |
 | Tab strip height | The fork's extra 6px was dropped. Upstream's tab row is the title bar now and is at least 34px tall, more than the fork's strip was. Open for the user: whether they want it taller still. | 2026-10-05 |
 | Trunk under a note | Upstream carries a worktree child's tree guide on past its note and ports lines (`RowLayout::trunk_below`), and a test asks it of every layout that draws a tree. The Orbita layout returns upstream's `row::trunk_below`, which reads `tree_padding` and `tree_color` from the look like the row's own guide, so the trunk matches the Orbita guide's width and color. | 2026-10-16 |
 | Worktree font in Settings | Upstream's rebuilt Settings window lists four faces (`FACES`), and the fork's `SidebarWorktrees` is not one of them, as it was not before: `[sidebar_worktrees]` is set in the config file only. The Fonts page's `size_control` and `specimen_title` still match on every `FontFace`, so they carry arms for it. | 2026-10-16 |
@@ -73,7 +74,7 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   the Orbita highlight is nested by `mark_nested`, so do not add parameters
   to them again.
 - **New constructions of structs the fork extended.** `RowContext` has a
-  `worktree_font`, and `Theme` has `accent` and `chrome`. Upstream's new tests,
+  `worktree_font`, and `Theme` has `chrome`. Upstream's new tests,
   previews, and row builders (`append_agent_rows`, `append_device_agents`)
   build them without those.
 - **New fields on structs the fork builds.** The Orbita layout rebuilds a
@@ -109,6 +110,12 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   (`orbita_tests`, the daemon binding test) in test targets only, and
   `Target::capture` took the pane's selection, which the daemon binding runner
   fills with `plugin_selection()` like upstream's `invoke_custom_command`.
+- **Controls the chrome reaches by keyboard.** Upstream names every sidebar
+  button for screen readers and makes it an F6-region stop through
+  `HerdrWindow::sidebar_button` (`chrome_stop`). The Orbita header's plus and
+  hamburger (`spaces_actions`, which takes the window for it) go through it
+  too. A control the fork adds to the chrome needs the same call; nothing
+  fails without it.
 - **Visibility after a move.** When upstream moves a type into a submodule, a
   fork method added with `pub(super)` stops being reachable. `RowBadge` methods
   need `pub(in crate::sidebar)`.
