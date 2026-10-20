@@ -8,7 +8,7 @@ files often, so entries name symbols, not paths: find them with a search.
 | Area | Decision | Since |
 | --- | --- | --- |
 | Ahead and behind counts | Upstream draws them (`Upstream` in the sidebar row). The fork's own counts were dropped; the Orbita layout passes `row.upstream()` like Herdr's layout. | 2026-10-03 |
-| `[daemon_keybindings]` | Kept. The user's `config-gpui.local.toml` binds `"prefix+m" = "cmd-shift-m"`. Upstream runs `[[keys.command]]` chords itself, so the table only adds a native shortcut beside the chord. Its bindings come from the local GUI config even while a device uses its server's keybindings. A keystroke `[pane_keys]` holds is refused, like one a native shortcut holds. | 2026-10-05 |
+| `[daemon_keybindings]` | Kept. The user's `config-gpui.local.toml` binds `"prefix+m" = "cmd-shift-m"`. Upstream runs `[[keys.command]]` chords itself, so the table only adds a native shortcut beside the chord. Its bindings come from the local GUI config even while a device uses its server's keybindings. Upstream lets a daemon `[[keys.command]]` on a direct keystroke take over a catalog default (`Shortcut::catalog_default`), but a prefix chord still gets no native shortcut, and the daemon cannot name a `cmd` key, so the table stays. A keystroke `[pane_keys]` holds is refused, like one a native shortcut holds. | 2026-10-05 |
 | Plugin token badges | Open. The Orbita layout follows rows configured in the daemon's `[ui.sidebar.spaces]` like every layout, and draws its own badge line only on native rows (no configured rows, or `[usage] inline = false`). Whether the badge line stays is the user's call. | 2026-10-03 |
 | Uncommitted mark on rows | Orbita rows draw none: the Orbita layout takes the mark off the badge it hands the shared row (`RowBadge::without_dirty`). Upstream's note mark stays on the badge. The title bar marks the focused checkout with a dot on its branch icon. | 2026-10-08 |
 | Orbita style | Upstream replaced the style traits with one `SidebarMetrics` value. The Orbita look is the rounded comfortable preset run through `SidebarMetrics::orbita`, which sets one `orbita` flag; everything the flag means is a `SidebarLook` method in the Orbita layout's file. Its child indent carries the guide's tick, so upstream code that reads `child_indent` lines up with Orbita rows. | 2026-10-08 |
@@ -23,7 +23,7 @@ files often, so entries name symbols, not paths: find them with a search.
 | Terminal-only font keys | Upstream's `[terminal]`-only keys (`line_height`, `weight`) are refused for `[sidebar_worktrees]` as for `[sidebar]`, `[tabs]`, and `[ui]`: the fork's face is in the list `Config` runs through `reject_terminal_keys`, so the key is reported in `unknown_keys` and ignored. A terminal-only key upstream adds to that function needs no fork code. | 2026-10-13 |
 | Repository and device icons | Upstream's `show_repository_icons` and `show_device_icons` apply to the Orbita layout with no fork code: the layout hands the shared row the icon its context carries, and `LayoutMode::device_icons` leaves out only Orca and Minimal. | 2026-10-14 |
 | Device themes | `[theme_overrides]` apply to the app theme only: `Config::theme_with_directories` runs upstream's shared `resolve` and then the overrides, for every theme source, Follow Herdr included. A device's `theme` (`theme_named`) paints only the terminal and takes none. | 2026-10-14 |
-| Blocked bar and Edge rail | Upstream's `edge_rail` (Settings > Appearance > Indicators) draws a bar on the leading edge of working, done, and blocked rows in every layout (`Indicators::rail`, added once in `Cell::row`); the retired `status_icons = "rail"` reads as Outline with `edge_rail` on. The Orbita layout's own blocked bar was dropped for it. Since 2026-10-18 the user's configs set neither key, and the app no longer reads Herdr's `ui.status_indicators`, so rows draw upstream's default Dots. | 2026-10-15 |
+| Blocked bar and Edge rail | Upstream's `edge_rail` (Settings > Appearance > Indicators) draws a bar on the leading edge of working, done, and blocked rows in every layout (`Indicators::rail`, added once in `Cell::row`); the retired `status_icons = "rail"` reads as Outline with `edge_rail` on. The Orbita layout's own blocked bar was dropped for it. The app no longer reads Herdr's `ui.status_indicators`; the user's `config-gpui.local.toml` sets `status_icons = "braille"` (2026-10-19). | 2026-10-15 |
 | Theme accent | Upstream's `Theme::accent` holds a desktop theme's own accent (Omarchy), and `system_accent` the Windows one, which wins. The fork's `[theme_overrides] accent` writes into upstream's `accent`, and only when set, so a desktop accent survives without a pin. `Theme` keeps only the fork's `chrome` field. | 2026-10-18 |
 | Tab strip height | The fork's extra 6px was dropped. Upstream's tab row is the title bar now and is at least 34px tall, more than the fork's strip was. Open for the user: whether they want it taller still. | 2026-10-05 |
 | Trunk under a note | Upstream carries a worktree child's tree guide on past its note and ports lines (`RowLayout::trunk_below`), and a test asks it of every layout that draws a tree. The Orbita layout returns upstream's `row::trunk_below`, which reads `tree_padding` and `tree_color` from the look like the row's own guide, so the trunk matches the Orbita guide's width and color. | 2026-10-16 |
@@ -52,7 +52,7 @@ these, so they cannot conflict:
 What still has to live in upstream's files: the `Orbita` and `SidebarWorktrees`
 variants, the `orbita` flag on `SidebarMetrics` with its arm in
 `SidebarMetrics::for_mode`, `corners::ROW`, the `marked` line in
-`SidebarLook::highlight`, the one-line hooks in the shared sidebar `row` and
+`SidebarLook::paint_highlight`, the one-line hooks in the shared sidebar `row` and
 `row::trunk_below`, the
 `Theme` fields and accessors, the `Keymap` daemon bindings, the validation
 call in the shortcut editor, the `sidebar_worktrees` entry in the list of
@@ -72,7 +72,10 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   `tokens` list. Every window or layout upstream adds calls the old shape.
   `SidebarLook::highlight` and `SidebarLook::mark` keep upstream's signatures:
   the Orbita highlight is nested by `mark_nested`, so do not add parameters
-  to them again.
+  to them again. `mark` takes the row's `(RowState, HostMark)` pair, and
+  `mark_nested` takes the same pair and layers wash and highlight through
+  upstream's `washed`, so the host colour sits in the order upstream picks.
+  The title bar's attention dot is another `titlebar::bar` caller.
 - **New constructions of structs the fork extended.** `RowContext` has a
   `worktree_font`, and `Theme` has `chrome`. Upstream's new tests,
   previews, and row builders (`append_agent_rows`, `append_device_agents`)
