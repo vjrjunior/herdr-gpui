@@ -7,16 +7,16 @@ files often, so entries name symbols, not paths: find them with a search.
 
 | Area | Decision | Since |
 | --- | --- | --- |
-| Ahead and behind counts | Upstream draws them (`Upstream` in the sidebar row). The fork's own counts were dropped; the Orbita layout passes `row.upstream()` like Herdr's layout. | 2026-10-03 |
+| Ahead and behind counts | Upstream draws them (`Upstream` in the sidebar row). The fork's own counts were dropped; the Orbita layout passes `row.upstream()` like Herdr's layout and right-aligns them (`counts_x`) on the branch line. Since upstream hangs a badge's counts line beside the branch line (`detail_limit`), that line ends one gap before the pull request's counts, where the badge column used to start; the fork's test measures against `pr-{key}`'s left edge. | 2026-10-21 |
 | `[daemon_keybindings]` | Kept. The user's `config-gpui.local.toml` binds `"prefix+m" = "cmd-shift-m"`. Upstream runs `[[keys.command]]` chords itself, so the table only adds a native shortcut beside the chord. Its bindings come from the local GUI config even while a device uses its server's keybindings. Upstream lets a daemon `[[keys.command]]` on a direct keystroke take over a catalog default (`Shortcut::catalog_default`), but a prefix chord still gets no native shortcut, and the daemon cannot name a `cmd` key, so the table stays. A keystroke `[pane_keys]` holds is refused, like one a native shortcut holds. | 2026-10-05 |
 | Plugin token badges | Open. The Orbita layout follows rows configured in the daemon's `[ui.sidebar.spaces]` like every layout, and draws its own badge line only on native rows (no configured rows, or `[usage] inline = false`). Whether the badge line stays is the user's call. | 2026-10-03 |
-| Uncommitted mark on rows | Orbita rows draw none: the Orbita layout takes the mark off the badge it hands the shared row (`RowBadge::without_dirty`). Upstream's note mark stays on the badge. The title bar marks the focused checkout with a dot on its branch icon. | 2026-10-08 |
+| Uncommitted mark on rows | Orbita rows draw none: the Orbita layout takes the mark off the badge it hands the shared row (`RowBadge::without_dirty`). Upstream's note mark stays on the badge. The title bar marks the focused checkout with a dot on its branch icon. Upstream's `[sidebar] change_counts = "local"` draws a checkout's counts in a pencil chip that stands for the mark; `without_dirty` keeps the counts, so that chip shows on Orbita rows, and `without_pr` keeps only local counts, since pull request counts belong to the number a `pr` token replaces. The user keeps the default `"pr"`. Open for the user if they switch. | 2026-10-21 |
 | Orbita style | Upstream replaced the style traits with one `SidebarMetrics` value. The Orbita look is the rounded comfortable preset run through `SidebarMetrics::orbita`, which sets one `orbita` flag; everything the flag means is a `SidebarLook` method in the Orbita layout's file. Its child indent carries the guide's tick, so upstream code that reads `child_indent` lines up with Orbita rows. | 2026-10-08 |
 | Rows under a host header | Upstream steps rows in under their host (`RowContext::nest`). An Orbita highlight starts at the row's whole indent, so with several hosts it steps in with the row; Herdr's layouts keep full-width highlights. Open for the user if they list several hosts. | 2026-10-08 |
 | Fold chevron icon | Upstream ships `icons/chevron-right.svg` and registers it. The fork's copy and its registry entry were dropped. | 2026-10-08 |
 | Bundle signing | `scripts/fork/update.sh` signs ad hoc, without the hardened runtime, so upstream's `Herdr.entitlements` is not applied: the `NSMicrophoneUsageDescription` key in upstream's `Info.plist` is what lets a pane ask for the microphone. If the script ever signs with `--options runtime`, pass the entitlements file too. | 2026-10-07 |
 | Sidebar search field | Upstream made the field the Spaces heading (`search_heading`, on with `show_sidebar_search`). The Orbita layout keeps it and hangs its plus and hamburger at the heading's right, beside the field; with search off they sit on the plain header. The fork's header test measures the buttons' right margin against the field's left inset. Open for the user: whether Orbita should hide the field. | 2026-10-14 |
-| Daemon binding errors | The `[daemon_keybindings]` and unbound-command errors are a fork-owned `DaemonBindingError`, which the crate `Error` wraps in one transparent `DaemonBinding` variant, as upstream does for `coder` and `code_server`. New fork errors go in that enum. | 2026-10-10 |
+| Daemon binding errors | The `[daemon_keybindings]` and unbound-command errors are a fork-owned `DaemonBindingError`. Upstream's `error.rs` reached 999 lines, so the crate `Error` has no fork variant: `From<DaemonBindingError> for crate::Error` in `keymap/daemon_bindings.rs` boxes it into upstream's `Error::ConfigFile { uri: None, source }`, as upstream does for `herdr_settings::Error`. The message and the `source()` chain are unchanged; tests take the error back out with a `refusal` helper that downcasts. New fork errors go in that enum. | 2026-10-21 |
 | Window backdrop | Upstream's `[backdrop]` paints every panel with its own color at the backdrop's opacity. The fork's `chrome` override replaces `theme.surface`, so it gets the same treatment with no code of its own. `titlebar::render` keeps upstream's signature; the tinted or flat choice is the `style` argument of `titlebar::bar`. | 2026-10-11 |
 | Shortcut editor | Upstream's Herdr > Keyboard Shortcuts writes `[keybindings]`. It validates a draft through `Keymap::with_edited_overrides`, which carries the loaded `[daemon_keybindings]`, so it refuses a key the table holds instead of saving a config that no longer loads. Any new upstream surface that writes keybindings needs the same call. | 2026-10-11 |
 | "Herdr UI" in messages | Upstream names the client "Herdr UI" in errors, notes, and dialogs. The fork's build-set name covers the window title, process name, application menu, and About box only, so Orbita's messages say "Herdr UI". Open for the user. | 2026-10-11 |
@@ -37,8 +37,13 @@ these, so they cannot conflict:
 - `config/theme_overrides.rs`: the `[theme_overrides]` types, re-exported from
   the config module.
 - `palette/daemon_binding.rs`: running a daemon command by its binding label.
-- `keymap/daemon_bindings.rs`: `DaemonBindingError`, the keystroke parser the
-  `Keymap` calls for `[daemon_keybindings]`, and `with_edited_overrides`.
+- `keymap/daemon_bindings.rs`: `DaemonBindingError` and its conversion into
+  the crate `Error`, the keystroke parser the `Keymap` calls for
+  `[daemon_keybindings]`, and `with_edited_overrides`.
+- `config/orbita.rs`: `FontSettings::worktree_font` and `Settings::keymap`,
+  which `Config::load` calls in one line each. `Settings::keymap` borrows the
+  whole `Settings`, so its call sits right after `let mut config`, before the
+  load starts moving fields out.
 - `popup_chrome.rs`: the popup panel, with `PopupLook` as the one-line entry
   point the window render calls.
 - `sidebar/layouts/orbita.rs` and `sidebar/orbita_tests.rs`. The layout file
@@ -82,7 +87,8 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   build them without those.
 - **New fields on structs the fork builds.** The Orbita layout rebuilds a
   `RowContext` for worktree rows and `RowBadge` through `RowBadge::new`, so a
-  field upstream adds (`nest`, `mark`, `noted`) has to be forwarded there.
+  field upstream adds (`nest`, `mark`, `noted`, `counts`) has to be forwarded
+  there, and through `RowBadge::without_pr` and `without_dirty`.
 - **The same entry on both sides.** When upstream registers something the
   fork also registers, such as an icon path, git keeps both match arms without
   a conflict. Drop the fork's.
@@ -113,6 +119,13 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   (`orbita_tests`, the daemon binding test) in test targets only, and
   `Target::capture` took the pane's selection, which the daemon binding runner
   fills with `plugin_selection()` like upstream's `invoke_custom_command`.
+  `agent_labels` took the pane's name; the Orbita layout's `agent` mirrors
+  Herdr's and passes `agent.pane`.
+- **Pull request fixtures.** Upstream shows a cached pull request only under
+  the device it was found for, which on this machine needs a verified local
+  daemon. A fork fixture that seeds `pr_cache` directly draws no badge and its
+  test fails on a missing `pr-{key}`; seed through `HerdrWindow::seed_pr`, as
+  upstream's own fixtures do.
 - **Controls the chrome reaches by keyboard.** Upstream names every sidebar
   button for screen readers and makes it an F6-region stop through
   `HerdrWindow::sidebar_button` (`chrome_stop`). The Orbita header's plus and
@@ -130,8 +143,12 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   the fork added long ago: the crate `Error` file did on 2026-10-10. Run
   `bash scripts/check-file-size.sh` right after the last stop, and move the
   fork's lines into a fork-owned module in the commit that added them.
-  The crate `Error` file stood at 990 lines after the 2026-10-16 sync, two of
-  them the fork's transparent `DaemonBinding` variant.
+  After the 2026-10-21 sync the crate `Error` file stands at 999 lines with
+  no fork line in it, `config.rs` at 999 with about a dozen fork lines (two
+  `mod`s, a re-export, the fork's fields and defaults, `corners::ROW`, and the
+  two calls into `config/orbita.rs`), and `sidebar/render.rs` at 990. To make
+  room, turn a fork statement into a call to a helper in a fork-owned module;
+  do not squeeze upstream's own lines.
 - **Gates upstream adds.** `just lint` also runs clippy with
   `--no-default-features`, and `just ci` runs `test-mockup-wait`, which needs
   `python3`; the usage tests need `jq`. `just check-sorted` refuses a
@@ -151,7 +168,16 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   timed out beside it in the gate after that, and the third gate passed. The
   fork touches neither file. A warm-up run does not reliably help; rerun the
   gate until `syspolicyd` settles, and report the failures as upstream's
-  instead of editing them.
+  instead of editing them. On 2026-10-21 the brew test failed three gates in a
+  row (`login_env` in one of them) and failed on upstream `main`'s own binary
+  too; the gate passed with `RUST_TEST_THREADS=8`, which runs every test, only
+  fewer at a time. Say so in the report when it was used.
+- **Comparing with upstream in a second worktree.** Workspace members' build
+  artifacts are named without the checkout's path, so a worktree that shares
+  `target/` overwrites this checkout's binaries, and Cargo then calls them
+  fresh: a `cargo test` here ran upstream's binary. Give the other worktree
+  its own `CARGO_TARGET_DIR`, or run `cargo clean -p herdr-gpui` here before
+  trusting another build.
 - **Test placement.** Test bodies live in `tests.rs` or `tests/` topic files,
   never inline in a production file. A fork test written inline has to move.
 - **Fixtures other fork commits set up.** Dropping a fork commit can drop a line
@@ -171,8 +197,8 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   so every fork field conflicts as a block that also holds upstream's
   reordered lines. Take upstream's side and put the fork's lines back in
   their sorted place: `daemon_keybindings` before `daytona`,
-  `sidebar_worktrees` after `sidebar_style`, `theme_overrides` after
-  `theme`, and `DaemonBinding` before `DaemonCancelled`. Then run
+  `sidebar_worktrees` after `sidebar_style`, and `theme_overrides` after
+  `theme`. The `Error` enum holds no fork variant since 2026-10-21. Then run
   `python3 scripts/check-sorted.py`.
 - Fork tests that asserted an unknown config key is rejected fail now: upstream
   ignores unknown keys and reports them in `unknown_keys`.
@@ -184,8 +210,8 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   header) and wraps the footer in `when(!header_actions)`, so an upstream
   edit to what sits between them conflicts. Keep upstream's body, such as the
   wrapper that clips the pinned host header, between the fork's two hooks.
-- The test module list in `config/tests.rs` and the `mod` lists in `main.rs`
-  and the palette file conflict whenever upstream adds an entry next to the
+- The test module list in `config/tests.rs` and the `mod` lists in `main.rs`,
+  `config.rs` (`orbita`, `theme_overrides`), and the palette file conflict whenever upstream adds an entry next to the
   fork's. Keep both lines, in alphabetical order.
 - The `pane_keys` field of `Keymap`. The fork's `daemon` field sits right
   under it, so an upstream change to that field or its doc comment conflicts.
@@ -219,4 +245,9 @@ git merged them cleanly. The type-check finds the first four; only the tests and
 - After the last stop, type-check every commit, not only the tip:
   `git rebase -x '<fmt check> && <cargo check>' main`. A commit that applied
   cleanly between two stops can still be the one that does not compile or is
-  not formatted.
+  not formatted. Add `bash scripts/check-file-size.sh` to the command, since
+  each commit has to stay under the limit too. It takes most of an hour, so run
+  it in the background. If the session ends or the scratch copy of the helpers
+  disappears mid-rebase, `git status` shows where it stopped: rerun that
+  commit's check by hand and `git rebase --continue`, and take the helpers back
+  out of the pre-sync tag with `git show <tag>:.claude/skills/orbita-sync/scripts/<helper>`.
