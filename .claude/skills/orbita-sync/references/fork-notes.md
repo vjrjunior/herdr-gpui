@@ -26,7 +26,9 @@ files often, so entries name symbols, not paths: find them with a search.
 | Blocked bar and Edge rail | Upstream's `edge_rail` (Settings > Appearance > Indicators) draws a bar on the leading edge of working, done, and blocked rows in every layout (`Indicators::rail`, added once in `Cell::row`); the retired `status_icons = "rail"` reads as Outline with `edge_rail` on. The Orbita layout's own blocked bar was dropped for it. The app no longer reads Herdr's `ui.status_indicators`; the user's `config-gpui.local.toml` sets `status_icons = "braille"` (2026-10-19). | 2026-10-15 |
 | Theme accent | Upstream's `Theme::accent` holds a desktop theme's own accent (Omarchy), and `system_accent` the Windows one, which wins. The fork's `[theme_overrides] accent` writes into upstream's `accent`, and only when set, so a desktop accent survives without a pin. `Theme` keeps only the fork's `chrome` field. | 2026-10-18 |
 | Tab strip height | The fork's extra 6px was dropped. Upstream's tab row is the title bar now and is at least 34px tall, more than the fork's strip was. Open for the user: whether they want it taller still. | 2026-10-05 |
-| Trunk under a note | Upstream carries a worktree child's tree guide on past its note and ports lines (`RowLayout::trunk_below`), and a test asks it of every layout that draws a tree. The Orbita layout returns upstream's `row::trunk_below`, which reads `tree_padding` and `tree_color` from the look like the row's own guide, so the trunk matches the Orbita guide's width and color. | 2026-10-16 |
+| Trunk under a note | Upstream carries a worktree child's tree guide on past its note and ports lines (`RowLayout::trunk_below`), and a test asks it of every layout that draws a tree. The Orbita layout passes `row::tree_gutter(cx)` to upstream's `row::trunk_below`, as Herdr's layout does; `trunk_below` and the row's `guide` read `tree_color` from the look, so the trunk matches the Orbita guide's color. | 2026-10-22 |
+| Worktree guides | Upstream draws worktree guides in every layout through the shared `row::guide`, switched on by `[worktrees] apply_to` holding `"sidebar"` (the default; `SidebarMetrics::with_guides`), and `for_mode` clears `tree_lines` for all but flat Classic and Devices. Its test `guides_run_from_the_main_checkout_to_each_childs_leading_mark` holds every layout to a tick that ends at the child's status dot. The Orbita guide now meets it: the fork's `tree_padding` was dropped, so the tick runs into the nested highlight up to the dot instead of stopping at the highlight's edge, and the Orbita preset no longer forces `tree_lines`, so `apply_to = []` drops its guides as it does Rounded's. Open for the user: stopping the tick at the highlight again needs an Orbita arm in upstream's test. | 2026-10-22 |
+| Current tab fill | Upstream moved tab colors into `tab_layout/`, one file per View > Tab Layout choice. `[theme_overrides] active_tab = "solid"` is the `theme.active_tab_fill()` call in `Classic::colors` and `Compact::colors`, the two that wash the current tab in the accent; Pills, Underline, and Cards do not use the accent there and ignore the key. A new layout that washes the current tab needs the same call. | 2026-10-22 |
 | Worktree font in Settings | Upstream's rebuilt Settings window lists four faces (`FACES`), and the fork's `SidebarWorktrees` is not one of them, as it was not before: `[sidebar_worktrees]` is set in the config file only. The Fonts page's `size_control` and `specimen_title` still match on every `FontFace`, so they carry arms for it. | 2026-10-16 |
 
 ## Where the fork's code lives
@@ -48,8 +50,9 @@ these, so they cannot conflict:
   point the window render calls.
 - `sidebar/layouts/orbita.rs` and `sidebar/orbita_tests.rs`. The layout file
   also holds the Orbita preset and the look methods the shared row and the
-  sidebar render call: `mark_nested`, `tree_color`,
-  `tree_padding`, `header_actions`, `primary_chip`, `counts_x`.
+  sidebar render call: `mark_nested`, `tree_color`, `header_actions`,
+  `primary_chip`, `counts_x`, and `spaces_header`, which hangs the plus and
+  hamburger on the Spaces heading.
 - Topic test files: `config/tests/{theme_overrides,sidebar_worktrees,daemon_keybindings}.rs`,
   `keymap/tests/daemon_bindings.rs`, `titlebar/orbita_git_button_tests.rs`,
   `menu/shortcut_editor/tests/daemon_bindings.rs`.
@@ -57,8 +60,9 @@ these, so they cannot conflict:
 What still has to live in upstream's files: the `Orbita` and `SidebarWorktrees`
 variants, the `orbita` flag on `SidebarMetrics` with its arm in
 `SidebarMetrics::for_mode`, `corners::ROW`, the `marked` line in
-`SidebarLook::paint_highlight`, the one-line hooks in the shared sidebar `row` and
-`row::trunk_below`, the
+`SidebarLook::paint_highlight`, the one-line hooks in the shared sidebar `row`,
+`row::guide`, and `row::trunk_below`, the `active_tab_fill` calls in two tab
+layouts, the
 `Theme` fields and accessors, the `Keymap` daemon bindings, the validation
 call in the shortcut editor, the `sidebar_worktrees` entry in the list of
 faces that take no terminal-only keys, `menu.svg` in the sorted
@@ -143,12 +147,15 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   the fork added long ago: the crate `Error` file did on 2026-10-10. Run
   `bash scripts/check-file-size.sh` right after the last stop, and move the
   fork's lines into a fork-owned module in the commit that added them.
-  After the 2026-10-21 sync the crate `Error` file stands at 999 lines with
-  no fork line in it, `config.rs` at 999 with about a dozen fork lines (two
-  `mod`s, a re-export, the fork's fields and defaults, `corners::ROW`, and the
-  two calls into `config/orbita.rs`), and `sidebar/render.rs` at 990. To make
-  room, turn a fork statement into a call to a helper in a fork-owned module;
-  do not squeeze upstream's own lines.
+  On 2026-10-22 upstream left `sidebar/render.rs` at 993 lines and the fork's
+  nine pushed it to 1,004; the fork's lines there are now two: the
+  `worktree_font` field of `RowContext` and the `spaces_header` call, with the
+  footer wrapped as `.children((!look.header_actions()).then(|| ...))`, which
+  adds no line and keeps upstream's footer at its indentation. After that
+  sync `render.rs` stands at 995, the crate `Error` file at 952 with no fork
+  line, and `config.rs` at 889. To make room, turn a fork statement into a
+  call to a helper in a fork-owned module; do not squeeze upstream's own
+  lines.
 - **Gates upstream adds.** `just lint` also runs clippy with
   `--no-default-features`, and `just ci` runs `test-mockup-wait`, which needs
   `python3`; the usage tests need `jq`. `just check-sorted` refuses a
@@ -188,7 +195,9 @@ git merged them cleanly. The type-check finds the first four; only the tests and
 
 - The Orbita paragraph of the crate README is edited by most fork commits, so
   it conflicts at nearly every stop. Keep the sentence about configured rows
-  next to the badge description it qualifies.
+  next to the badge description it qualifies. A wording fix in the commit
+  that added the paragraph (the Orbita layout, on 2026-10-22) comes back at every
+  later stop: take the later commit's side and reapply the fix.
 - `Keymap` and the config `Settings` struct gain fields on both sides. Keep
   both; `with_overrides` must stay available outside tests because upstream
   builds server keymaps with it, and it forwards to `with_daemon_bindings`.
@@ -205,11 +214,11 @@ git merged them cleanly. The type-check finds the first four; only the tests and
 - When upstream splits a file the fork also edits, or moves its test module
   out, git reports the whole old block as the conflict. Take upstream's side
   and replay the fork's hunks with `port_hunks.py`.
-- The Spaces section of `render_sidebar`: the fork hangs `header_actions` on
+- The Spaces section of `render_sidebar`: the fork maps `spaces_header` over
   whatever upstream's heading chain returns (the search field or the plain
-  header) and wraps the footer in `when(!header_actions)`, so an upstream
-  edit to what sits between them conflicts. Keep upstream's body, such as the
-  wrapper that clips the pinned host header, between the fork's two hooks.
+  header) and turns the footer's `.child(` into
+  `.children((!look.header_actions()).then(|| {`, so an upstream edit to the
+  footer's first or last line conflicts. Keep upstream's body between them.
 - The test module list in `config/tests.rs` and the `mod` lists in `main.rs`,
   `config.rs` (`orbita`, `theme_overrides`), and the palette file conflict whenever upstream adds an entry next to the
   fork's. Keep both lines, in alphabetical order.
