@@ -53,6 +53,10 @@ these, so they cannot conflict:
   sidebar render call: `mark_nested`, `tree_color`, `header_actions`,
   `primary_chip`, `counts_x`, and `spaces_header`, which hangs the plus and
   hamburger on the Spaces heading.
+- `crates/herdr-commands/build.rs`: sets `HERDR_BUILD_APP_NAME` for the
+  palette's About label in the catalog upstream moved there. Its check copies
+  `validate_app_name` in `herdr-gpui`'s `build_identity.rs`; change both
+  together.
 - Topic test files: `config/tests/{theme_overrides,sidebar_worktrees,daemon_keybindings}.rs`,
   `keymap/tests/daemon_bindings.rs`, `titlebar/orbita_git_button_tests.rs`,
   `menu/shortcut_editor/tests/daemon_bindings.rs`.
@@ -118,6 +122,14 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   (`default_shortcuts()`), which the daemon binding check reads; a fork test
   that names a native default wraps it in `platform_default`, since Linux
   binds other keys.
+- **Code upstream moves into a new crate.** Git carries a fork hunk into the
+  moved file without a conflict, but the new crate lacks what the hunk relied
+  on in `herdr-gpui`. On 2026-10-24 the command catalog moved to
+  `herdr-commands`, and the palette's About label
+  (`env!("HERDR_BUILD_APP_NAME")`) stopped compiling, since only
+  `herdr-gpui`'s build script set the variable. The rebase did not stop; the
+  first gate's `lint` failed. Type-check the workspace, not only `herdr-gpui`,
+  after a range that splits crates out.
 - **Upstream adding a parameter to a function the fork calls.**
   `HerdrWindow::reconnect` took a `cx`, which broke the fork's window tests
   (`orbita_tests`, the daemon binding test) in test targets only, and
@@ -166,6 +178,15 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   `~/.config/ghostty/themes` here holds themes CI does not have, so two of
   them fail on this machine and pass with an empty `XDG_CONFIG_HOME`. Run the
   gates as CI does: `XDG_CONFIG_HOME=<empty dir> scripts/fork/update.sh --no-sync`.
+  Three `herdr-orchestrator` tests in `tests::opening_script` expect only the
+  fixture's `claude` to be found, but the probe (`installed_programs_script`)
+  adds a login shell's PATH, and `/etc/paths.d/homebrew` puts
+  `/opt/homebrew/bin`, where `codex` lives, on every login PATH here; no
+  environment variable reaches the test, which clears it. On 2026-10-24 the
+  gate ran its other steps, then both `cargo test` runs with `--no-fail-fast`
+  and `-- --skip` for those three, `just test-mockup-wait`, and
+  `scripts/fork/update.sh --no-sync --skip-ci`. Do the same while they fail
+  and the fork leaves both crates untouched.
 - **Upstream's process-timing tests.** On this machine
   `timeout_kills_shell_and_descendant_group` (`login_env`) fails in the first
   runs after a rebuild and passes alone: it gives a fresh shell script one
