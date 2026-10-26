@@ -16,7 +16,7 @@ files often, so entries name symbols, not paths: find them with a search.
 | Fold chevron icon | Upstream ships `icons/chevron-right.svg` and registers it. The fork's copy and its registry entry were dropped. | 2026-10-08 |
 | Bundle signing | `scripts/fork/update.sh` signs ad hoc, without the hardened runtime, so upstream's `Herdr.entitlements` is not applied: the `NSMicrophoneUsageDescription` key in upstream's `Info.plist` is what lets a pane ask for the microphone. If the script ever signs with `--options runtime`, pass the entitlements file too. | 2026-10-07 |
 | Sidebar search field | Upstream made the field the Spaces heading (`search_heading`, on with `show_sidebar_search`). The Orbita layout keeps it and hangs its plus and hamburger at the heading's right, beside the field; with search off they sit on the plain header. The fork's header test measures the buttons' right margin against the field's left inset. Open for the user: whether Orbita should hide the field. | 2026-10-14 |
-| Daemon binding errors | The `[daemon_keybindings]` and unbound-command errors are a fork-owned `DaemonBindingError`. Upstream's `error.rs` reached 999 lines, so the crate `Error` has no fork variant: `From<DaemonBindingError> for crate::Error` in `keymap/daemon_bindings.rs` boxes it into upstream's `Error::ConfigFile { uri: None, source }`, as upstream does for `herdr_settings::Error`. The message and the `source()` chain are unchanged; tests take the error back out with a `refusal` helper that downcasts. New fork errors go in that enum. | 2026-10-21 |
+| Daemon binding errors | The `[daemon_keybindings]` and unbound-command errors are `keymap::daemon_bindings::Error`, in `keymap/daemon_bindings/error.rs`, wrapped once by the root `Error::DaemonBindings` (sorted after `Daemon`). Upstream's rule since 2026-10-24 names a feature's error `Error` in its module's `error.rs`, and its refactor shrank the root `error.rs` to about 370 lines, so the old boxing into `Error::ConfigFile` was dropped. Tests match the variant; a transparent variant's `source()` is the inner error's source, so the cause test reads it from the inner error. New fork errors go in that enum. | 2026-10-26 |
 | Window backdrop | Upstream's `[backdrop]` paints every panel with its own color at the backdrop's opacity. The fork's `chrome` override replaces `theme.surface`, so it gets the same treatment with no code of its own. `titlebar::render` keeps upstream's signature; the tinted or flat choice is the `style` argument of `titlebar::bar`. | 2026-10-11 |
 | Shortcut editor | Upstream's Herdr > Keyboard Shortcuts writes `[keybindings]`. It validates a draft through `Keymap::with_edited_overrides`, which carries the loaded `[daemon_keybindings]`, so it refuses a key the table holds instead of saving a config that no longer loads. Any new upstream surface that writes keybindings needs the same call. | 2026-10-11 |
 | "Herdr UI" in messages | Upstream names the client "Herdr UI" in errors, notes, and dialogs. The fork's build-set name covers the window title, process name, application menu, and About box only, so Orbita's messages say "Herdr UI". Open for the user. | 2026-10-11 |
@@ -39,9 +39,9 @@ these, so they cannot conflict:
 - `config/theme_overrides.rs`: the `[theme_overrides]` types, re-exported from
   the config module.
 - `palette/daemon_binding.rs`: running a daemon command by its binding label.
-- `keymap/daemon_bindings.rs`: `DaemonBindingError` and its conversion into
-  the crate `Error`, the keystroke parser the `Keymap` calls for
-  `[daemon_keybindings]`, and `with_edited_overrides`.
+- `keymap/daemon_bindings.rs` and its `error.rs`: the module's `Error`, the
+  keystroke parser the `Keymap` calls for `[daemon_keybindings]`, and
+  `with_edited_overrides`.
 - `config/orbita.rs`: `FontSettings::worktree_font` and `Settings::keymap`,
   which `Config::load` calls in one line each. `Settings::keymap` borrows the
   whole `Settings`, so its call sits right after `let mut config`, before the
@@ -67,7 +67,8 @@ variants, the `orbita` flag on `SidebarMetrics` with its arm in
 `SidebarLook::paint_highlight`, the one-line hooks in the shared sidebar `row`,
 `row::guide`, and `row::trunk_below`, the `active_tab_fill` calls in two tab
 layouts, the
-`Theme` fields and accessors, the `Keymap` daemon bindings, the validation
+`Theme` fields and accessors, the `Keymap` daemon bindings, the
+`DaemonBindings` variant of the crate `Error`, the validation
 call in the shortcut editor, the `sidebar_worktrees` entry in the list of
 faces that take no terminal-only keys, `menu.svg` in the sorted
 `embedded_icons!` table with the `branch` and `branch_dot` helpers after it,
@@ -114,6 +115,14 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   `sidebar_worktrees` entry stays last in that array, so upstream's positions
   keep naming its own faces and a new pattern only needs one more `_` at the
   end. In the middle, a pattern that still compiled would pick another face.
+- **Error variants upstream moves into a feature's `Error`.** On 2026-10-24
+  upstream moved config validation into `config::Error`, wrapped as
+  `crate::Error::Settings`, and keymap failures into `keymap::Error`. Inside
+  `config/tests/`, `Error` now names `config::Error`, so a fork test that
+  expects a root variant (`MissingHome`) writes `crate::Error::...`, and one
+  that expects a moved variant writes
+  `crate::Error::Settings(Error::InvalidFontSize(..))`. The rebase stops on
+  none of this; only the test target fails to compile.
 - **Upstream replacing an API the fork calls.** A fork function that used
   `status_style` broke when upstream moved status colors into `Indicators`;
   the fork's `FontConfig::apply` became redundant when upstream added
@@ -163,9 +172,9 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   nine pushed it to 1,004; the fork's lines there are now two: the
   `worktree_font` field of `RowContext` and the `spaces_header` call, with the
   footer wrapped as `.children((!look.header_actions()).then(|| ...))`, which
-  adds no line and keeps upstream's footer at its indentation. After that
-  sync `render.rs` stands at 995, the crate `Error` file at 952 with no fork
-  line, and `config.rs` at 889. To make room, turn a fork statement into a
+  adds no line and keeps upstream's footer at its indentation. After the
+  2026-10-26 sync `render.rs` stands at 995, the crate `Error` file at 372,
+  and `config.rs` at 909. To make room, turn a fork statement into a
   call to a helper in a fork-owned module; do not squeeze upstream's own
   lines.
 - **Gates upstream adds.** `just lint` also runs clippy with
