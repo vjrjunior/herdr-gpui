@@ -28,7 +28,7 @@ files often, so entries name symbols, not paths: find them with a search.
 | Tab strip height | The fork's extra 6px was dropped. Upstream's tab row is the title bar now and is at least 34px tall, more than the fork's strip was. Open for the user: whether they want it taller still. | 2026-10-05 |
 | Trunk under a note | Upstream carries a worktree child's tree guide on past its note and ports lines (`RowLayout::trunk_below`), and a test asks it of every layout that draws a tree. The Orbita layout passes `row::tree_gutter(cx)` to upstream's `row::trunk_below`, as Herdr's layout does; `trunk_below` and the row's `guide` read `tree_color` from the look, so the trunk matches the Orbita guide's color. | 2026-10-22 |
 | Worktree guides | Upstream draws worktree guides in every layout through the shared `row::guide`, switched on by `[worktrees] apply_to` holding `"sidebar"` (the default; `SidebarMetrics::with_guides`), and `for_mode` clears `tree_lines` for all but flat Classic and Devices. Its test `guides_run_from_the_main_checkout_to_each_childs_leading_mark` holds every layout to a tick that ends at the child's status dot. The Orbita guide now meets it: the fork's `tree_padding` was dropped, so the tick runs into the nested highlight up to the dot instead of stopping at the highlight's edge, and the Orbita preset no longer forces `tree_lines`, so `apply_to = []` drops its guides as it does Rounded's. Open for the user: stopping the tick at the highlight again needs an Orbita arm in upstream's test. | 2026-10-22 |
-| Current tab fill | Upstream moved tab colors into `tab_layout/`, one file per View > Tab Layout choice. `[theme_overrides] active_tab = "solid"` is the `theme.active_tab_fill()` call in `Classic::colors` and `Compact::colors`, the two that wash the current tab in the accent; Pills, Underline, and Cards do not use the accent there and ignore the key. A new layout that washes the current tab needs the same call. | 2026-10-22 |
+| Current tab fill | Upstream moved tab colors into `tab_layout/`, one file per View > Tab Layout choice. `[theme_overrides] active_tab = "solid"` is the `theme.active_tab_fill()` call in `Classic::colors` and `Compact::colors`, the two that wash the current tab in the accent; Pills, Underline, Cards, and Curved do not use the accent there and ignore the key. A new layout that washes the current tab needs the same call. | 2026-10-22 |
 | Worktree font in Settings | Upstream's rebuilt Settings window lists four faces (`FACES`), and the fork's `SidebarWorktrees` is not one of them, as it was not before: `[sidebar_worktrees]` is set in the config file only. The Fonts page's `size_control` and `specimen_title` still match on every `FontFace`, so they carry arms for it. | 2026-10-16 |
 
 ## Where the fork's code lives
@@ -173,8 +173,9 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   `worktree_font` field of `RowContext` and the `spaces_header` call, with the
   footer wrapped as `.children((!look.header_actions()).then(|| ...))`, which
   adds no line and keeps upstream's footer at its indentation. After the
-  2026-10-26 sync `render.rs` stands at 995, the crate `Error` file at 372,
-  and `config.rs` at 909. To make room, turn a fork statement into a
+  second 2026-10-26 sync `render.rs` stands at 996, the window's
+  `window/render.rs` at 988, the crate `Error` file at 372, and `config.rs`
+  at 909. To make room, turn a fork statement into a
   call to a helper in a fork-owned module; do not squeeze upstream's own
   lines.
 - **Gates upstream adds.** `just lint` also runs clippy with
@@ -239,6 +240,11 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   `sidebar_worktrees` after `sidebar_style`, and `theme_overrides` after
   `theme`. The `Error` enum holds no fork variant since 2026-10-21. Then run
   `python3 scripts/check-sorted.py`.
+- Upstream tests that name the application menu or its items "Herdr"
+  (`menus/tests.rs`, `about.rs`). The fork's build-set name makes that menu
+  `crate::WINDOW_TITLE`, so take upstream's test and write the title through
+  it. On 2026-10-26 upstream's QA menu flag rewrote the test the fork had
+  ported; the rest of the file merged cleanly.
 - Fork tests that asserted an unknown config key is rejected fail now: upstream
   ignores unknown keys and reports them in `unknown_keys`.
 - When upstream splits a file the fork also edits, or moves its test module
