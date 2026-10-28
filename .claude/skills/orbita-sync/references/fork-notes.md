@@ -173,9 +173,9 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   `worktree_font` field of `RowContext` and the `spaces_header` call, with the
   footer wrapped as `.children((!look.header_actions()).then(|| ...))`, which
   adds no line and keeps upstream's footer at its indentation. After the
-  second 2026-10-26 sync `render.rs` stands at 996, the window's
+  2026-10-27 sync `render.rs` stands at 996, the window's
   `window/render.rs` at 988, the crate `Error` file at 372, and `config.rs`
-  at 909. To make room, turn a fork statement into a
+  at 922. To make room, turn a fork statement into a
   call to a helper in a fork-owned module; do not squeeze upstream's own
   lines.
 - **Gates upstream adds.** `just lint` also runs clippy with
