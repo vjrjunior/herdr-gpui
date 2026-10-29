@@ -29,6 +29,7 @@ files often, so entries name symbols, not paths: find them with a search.
 | Trunk under a note | Upstream carries a worktree child's tree guide on past its note and ports lines (`RowLayout::trunk_below`), and a test asks it of every layout that draws a tree. The Orbita layout passes `row::tree_gutter(cx)` to upstream's `row::trunk_below`, as Herdr's layout does; `trunk_below` and the row's `guide` read `tree_color` from the look, so the trunk matches the Orbita guide's color. | 2026-10-22 |
 | Worktree guides | Upstream draws worktree guides in every layout through the shared `row::guide`, switched on by `[worktrees] apply_to` holding `"sidebar"` (the default; `SidebarMetrics::with_guides`), and `for_mode` clears `tree_lines` for all but flat Classic and Devices. Its test `guides_run_from_the_main_checkout_to_each_childs_leading_mark` holds every layout to a tick that ends at the child's status dot. The Orbita guide now meets it: the fork's `tree_padding` was dropped, so the tick runs into the nested highlight up to the dot instead of stopping at the highlight's edge, and the Orbita preset no longer forces `tree_lines`, so `apply_to = []` drops its guides as it does Rounded's. Open for the user: stopping the tick at the highlight again needs an Orbita arm in upstream's test. | 2026-10-22 |
 | Current tab fill | Upstream moved tab colors into `tab_layout/`, one file per View > Tab Layout choice. `[theme_overrides] active_tab = "solid"` is the `theme.active_tab_fill()` call in `Classic::colors` and `Compact::colors`, the two that wash the current tab in the accent; Pills, Underline, Cards, and Curved do not use the accent there and ignore the key. A new layout that washes the current tab needs the same call. | 2026-10-22 |
+| App name in messages | Upstream's menu and command labels are Fluent messages (`menus-herdr`, `menus-about-herdr`, `menus-hide-herdr`, `menus-quit-herdr`, `commands-about`). The fork lists those IDs in `i18n/app_name.rs`, and `i18n::format`'s no-argument branch passes the text through `app_name::named`, which puts the build's name in place of "Herdr". `menus.rs` and the English files stay upstream's verbatim, and the `herdr-commands` build script was dropped. A test fails when a listed ID is gone; a new upstream message naming the app (not the daemon) needs its ID added, and one that gains arguments needs the call moved to the other branch. | 2026-10-29 |
 | Worktree font in Settings | Upstream's rebuilt Settings window lists four faces (`FACES`), and the fork's `SidebarWorktrees` is not one of them, as it was not before: `[sidebar_worktrees]` is set in the config file only. The Fonts page's `size_control` and `specimen_title` still match on every `FontFace`, so they carry arms for it. | 2026-10-16 |
 
 ## Where the fork's code lives
@@ -53,10 +54,10 @@ these, so they cannot conflict:
   sidebar render call: `mark_nested`, `tree_color`, `header_actions`,
   `primary_chip`, `counts_x`, and `spaces_header`, which hangs the plus and
   hamburger on the Spaces heading.
-- `crates/herdr-commands/build.rs`: sets `HERDR_BUILD_APP_NAME` for the
-  palette's About label in the catalog upstream moved there. Its check copies
-  `validate_app_name` in `herdr-gpui`'s `build_identity.rs`; change both
-  together.
+- `i18n/app_name.rs` and its `tests.rs`: the message IDs that name the app.
+- `locales/en-US/orbita.ftl`: the fork's own Fluent messages, IDs prefixed
+  `orbita-`: the layout's name (`LayoutMode::message`) and the worktree
+  face's Fonts labels. Text the fork adds to a migrated module goes here.
 - Topic test files: `config/tests/{theme_overrides,sidebar_worktrees,daemon_keybindings}.rs`,
   `keymap/tests/daemon_bindings.rs`, `titlebar/orbita_git_button_tests.rs`,
   `menu/shortcut_editor/tests/daemon_bindings.rs`.
@@ -72,8 +73,10 @@ layouts, the
 call in the shortcut editor, the `sidebar_worktrees` entry in the list of
 faces that take no terminal-only keys, `menu.svg` in the sorted
 `embedded_icons!` table with the `branch` and `branch_dot` helpers after it,
-the `style` argument of `titlebar::bar`, and one-line hooks in the window
-render.
+the `style` argument of `titlebar::bar`, `mod app_name` and the
+`app_name::named` call in `i18n::format`, the `SidebarWorktrees` arms of the
+Fonts page's `face_message` and `sample_messages`, and one-line hooks in the
+window render.
 
 ## Breaks without a conflict
 
@@ -139,6 +142,16 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   `herdr-gpui`'s build script set the variable. The rebase did not stop; the
   first gate's `lint` failed. Type-check the workspace, not only `herdr-gpui`,
   after a range that splits crates out.
+- **Text in a module marked `// i18n: migrated`.** `just check-i18n` refuses
+  a string literal that reads as English in such a file, and in every file
+  in the directory of the same name (`settings_window.rs` covers all of
+  `settings_window/`, `menus.rs` all of `menus/`); tests are exempt. Neither
+  the rebase nor the type-check runs it: run `python3 scripts/check-i18n.py`
+  after the last stop. Fork text there becomes an `orbita-` message in
+  `orbita.ftl`, called with `fl!`. A label upstream turns from a literal into a
+  message ID, as `LayoutMode::message` did, needs an `orbita-` ID for the
+  fork's arm. Check `git grep -l '// i18n: migrated'` against the fork's
+  files: upstream is migrating module by module, so the set grows.
 - **Upstream adding a parameter to a function the fork calls.**
   `HerdrWindow::reconnect` took a `cx`, which broke the fork's window tests
   (`orbita_tests`, the daemon binding test) in test targets only, and
@@ -173,9 +186,9 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   `worktree_font` field of `RowContext` and the `spaces_header` call, with the
   footer wrapped as `.children((!look.header_actions()).then(|| ...))`, which
   adds no line and keeps upstream's footer at its indentation. After the
-  2026-10-27 sync `render.rs` stands at 996, the window's
-  `window/render.rs` at 988, the crate `Error` file at 372, and `config.rs`
-  at 922. To make room, turn a fork statement into a
+  2026-10-29 sync `render.rs` stands at 996, the window's
+  `window/render.rs` at 962, the crate `Error` file at 372, and `config.rs`
+  at 927. To make room, turn a fork statement into a
   call to a helper in a fork-owned module; do not squeeze upstream's own
   lines.
 - **Gates upstream adds.** `just lint` also runs clippy with
