@@ -30,6 +30,7 @@ files often, so entries name symbols, not paths: find them with a search.
 | Worktree guides | Upstream draws worktree guides in every layout through the shared `row::guide`, switched on by `[worktrees] apply_to` holding `"sidebar"` (the default; `SidebarMetrics::with_guides`), and `for_mode` clears `tree_lines` for all but flat Classic and Devices. Its test `guides_run_from_the_main_checkout_to_each_childs_leading_mark` holds every layout to a tick that ends at the child's status dot. The Orbita guide now meets it: the fork's `tree_padding` was dropped, so the tick runs into the nested highlight up to the dot instead of stopping at the highlight's edge, and the Orbita preset no longer forces `tree_lines`, so `apply_to = []` drops its guides as it does Rounded's. Open for the user: stopping the tick at the highlight again needs an Orbita arm in upstream's test. | 2026-10-22 |
 | Current tab fill | Upstream moved tab colors into `tab_layout/`, one file per View > Tab Layout choice. `[theme_overrides] active_tab = "solid"` is the `theme.active_tab_fill()` call in `Classic::colors` and `Compact::colors`, the two that wash the current tab in the accent; Pills, Underline, Cards, and Curved do not use the accent there and ignore the key. A new layout that washes the current tab needs the same call. | 2026-10-22 |
 | App name in messages | Upstream's menu and command labels are Fluent messages (`menus-herdr`, `menus-about-herdr`, `menus-hide-herdr`, `menus-quit-herdr`, `commands-about`). The fork lists those IDs in `i18n/app_name.rs`, and `i18n::format`'s no-argument branch passes the text through `app_name::named`, which puts the build's name in place of "Herdr". `menus.rs` and the English files stay upstream's verbatim, and the `herdr-commands` build script was dropped. A test fails when a listed ID is gone; a new upstream message naming the app (not the daemon) needs its ID added, and one that gains arguments needs the call moved to the other branch. | 2026-10-29 |
+| Right to left | Upstream mirrors the chrome through `direction::Logical` (`ps`, `pe`, `row`, `inset_s`, `inset_e`) and every Herdr layout's rows. The fork's own code stays physical: the Orbita layout's file, `badge_line`, and `menu.right_edge`, which the `start` match in `menu/chrome.rs` reads as a distance from the window's left. Only the `en-XB` pseudo-locale can show the difference, since English is the one language that ships. Fork lines inside upstream's mirrored chains use the logical calls. Open for the user: mirroring Orbita needs its own change with an `en-XB` test. | 2026-10-30 |
 | Worktree font in Settings | Upstream's rebuilt Settings window lists four faces (`FACES`), and the fork's `SidebarWorktrees` is not one of them, as it was not before: `[sidebar_worktrees]` is set in the config file only. The Fonts page's `size_control` and `specimen_title` still match on every `FontFace`, so they carry arms for it. | 2026-10-16 |
 
 ## Where the fork's code lives
@@ -99,8 +100,8 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   build them without those.
 - **New fields on structs the fork builds.** The Orbita layout rebuilds a
   `RowContext` for worktree rows and `RowBadge` through `RowBadge::new`, so a
-  field upstream adds (`nest`, `mark`, `noted`, `counts`) has to be forwarded
-  there, and through `RowBadge::without_pr` and `without_dirty`.
+  field upstream adds (`nest`, `mark`, `noted`, `counts`, `muted`) has to be
+  forwarded there, and through `RowBadge::without_pr` and `without_dirty`.
 - **The same entry on both sides.** When upstream registers something the
   fork also registers, such as an icon path, git keeps both match arms without
   a conflict. Drop the fork's.
@@ -118,6 +119,10 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   `sidebar_worktrees` entry stays last in that array, so upstream's positions
   keep naming its own faces and a new pattern only needs one more `_` at the
   end. In the middle, a pattern that still compiled would pick another face.
+  A pattern that names every face, as the CJK cascade's
+  `let [sidebar, tabs, terminal, ui, sidebar_worktrees] = faces` does, names
+  the fork's too, and the `for` under it takes `sidebar_worktrees` with the
+  other non-terminal faces.
 - **Error variants upstream moves into a feature's `Error`.** On 2026-10-24
   upstream moved config validation into `config::Error`, wrapped as
   `crate::Error::Settings`, and keymap failures into `keymap::Error`. Inside
@@ -186,9 +191,9 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   `worktree_font` field of `RowContext` and the `spaces_header` call, with the
   footer wrapped as `.children((!look.header_actions()).then(|| ...))`, which
   adds no line and keeps upstream's footer at its indentation. After the
-  2026-10-29 sync `render.rs` stands at 996, the window's
-  `window/render.rs` at 962, the crate `Error` file at 372, and `config.rs`
-  at 927. To make room, turn a fork statement into a
+  2026-10-30 sync `render.rs` stands at 981, the window's
+  `window/render.rs` at 969, the crate `Error` file at 378, and `config.rs`
+  at 959. To make room, turn a fork statement into a
   call to a helper in a fork-owned module; do not squeeze upstream's own
   lines.
 - **Gates upstream adds.** `just lint` also runs clippy with
