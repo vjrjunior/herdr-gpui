@@ -14,9 +14,9 @@ files often, so entries name symbols, not paths: find them with a search.
 | Orbita style | Upstream replaced the style traits with one `SidebarMetrics` value. The Orbita look is the rounded comfortable preset run through `SidebarMetrics::orbita`, which sets one `orbita` flag; everything the flag means is a `SidebarLook` method in the Orbita layout's file. Its child indent carries the guide's tick, so upstream code that reads `child_indent` lines up with Orbita rows. | 2026-10-08 |
 | Rows under a host header | Upstream steps rows in under their host (`RowContext::nest`). An Orbita highlight starts at the row's whole indent, so with several hosts it steps in with the row; Herdr's layouts keep full-width highlights. Open for the user if they list several hosts. | 2026-10-08 |
 | Fold chevron icon | Upstream ships `icons/chevron-right.svg` and registers it. The fork's copy and its registry entry were dropped. | 2026-10-08 |
-| Bundle signing | `scripts/fork/update.sh` signs ad hoc, without the hardened runtime, so upstream's `Herdr.entitlements` is not applied: the `NSMicrophoneUsageDescription` key in upstream's `Info.plist` is what lets a pane ask for the microphone. If the script ever signs with `--options runtime`, pass the entitlements file too. | 2026-10-07 |
+| Bundle signing | `scripts/fork/update.sh` signs ad hoc, without the hardened runtime, so upstream's `Herdr.entitlements` is not applied: the `NSMicrophoneUsageDescription` key in upstream's `Info.plist` is what lets a pane ask for the microphone. If the script ever signs with `--options runtime`, pass the entitlements file too. `just bundle` also builds the Swift `herdr-nearby` with `xcrun swiftc` and copies a pinned `herdr-core` it downloads once into `target/release`; offline it warns and goes on without one. The script's `codesign --deep` covers both. | 2026-10-31 |
 | Sidebar search field | Upstream made the field the Spaces heading (`search_heading`, on with `show_sidebar_search`). The Orbita layout keeps it and hangs its plus and hamburger at the heading's right, beside the field; with search off they sit on the plain header. The fork's header test measures the buttons' right margin against the field's left inset. Open for the user: whether Orbita should hide the field. | 2026-10-14 |
-| Daemon binding errors | The `[daemon_keybindings]` and unbound-command errors are `keymap::daemon_bindings::Error`, in `keymap/daemon_bindings/error.rs`, wrapped once by the root `Error::DaemonBindings` (sorted after `Daemon`). Upstream's rule since 2026-10-24 names a feature's error `Error` in its module's `error.rs`, and its refactor shrank the root `error.rs` to about 370 lines, so the old boxing into `Error::ConfigFile` was dropped. Tests match the variant; a transparent variant's `source()` is the inner error's source, so the cause test reads it from the inner error. New fork errors go in that enum. | 2026-10-26 |
+| Daemon binding errors | The `[daemon_keybindings]` and unbound-command errors are `keymap::daemon_bindings::Error`, in `keymap/daemon_bindings/error.rs`, wrapped once by the root `Error::DaemonBindings` (sorted after `Daemon`). Upstream's rule since 2026-10-24 names a feature's error `Error` in its module's `error.rs`, and its refactor shrank the root `error.rs` to about 370 lines, so the old boxing into `Error::ConfigFile` was dropped. Tests match the variant; a transparent variant's `source()` is the inner error's source, so the cause test reads it from the inner error. New fork errors go in that enum. What a window shows comes from `Localize` (`docs/i18n.md`): `i18n/errors/daemon_bindings.rs` maps every variant to an `orbita-error-daemon-bindings-*` message in `orbita.ftl`, whose English reads exactly as `Display` does, and the palette's runner shows `error.localize()`. A new variant needs its arm and its message to compile. | 2026-10-31 |
 | Window backdrop | Upstream's `[backdrop]` paints every panel with its own color at the backdrop's opacity. The fork's `chrome` override replaces `theme.surface`, so it gets the same treatment with no code of its own. `titlebar::render` keeps upstream's signature; the tinted or flat choice is the `style` argument of `titlebar::bar`. | 2026-10-11 |
 | Shortcut editor | Upstream's Herdr > Keyboard Shortcuts writes `[keybindings]`. It validates a draft through `Keymap::with_edited_overrides`, which carries the loaded `[daemon_keybindings]`, so it refuses a key the table holds instead of saving a config that no longer loads. Any new upstream surface that writes keybindings needs the same call. | 2026-10-11 |
 | "Herdr UI" in messages | Upstream names the client "Herdr UI" in errors, notes, and dialogs. The fork's build-set name covers the window title, process name, application menu, and About box only, so Orbita's messages say "Herdr UI". Open for the user. | 2026-10-11 |
@@ -28,7 +28,7 @@ files often, so entries name symbols, not paths: find them with a search.
 | Tab strip height | The fork's extra 6px was dropped. Upstream's tab row is the title bar now and is at least 34px tall, more than the fork's strip was. Open for the user: whether they want it taller still. | 2026-10-05 |
 | Trunk under a note | Upstream carries a worktree child's tree guide on past its note and ports lines (`RowLayout::trunk_below`), and a test asks it of every layout that draws a tree. The Orbita layout passes `row::tree_gutter(cx)` to upstream's `row::trunk_below`, as Herdr's layout does; `trunk_below` and the row's `guide` read `tree_color` from the look, so the trunk matches the Orbita guide's color. | 2026-10-22 |
 | Worktree guides | Upstream draws worktree guides in every layout through the shared `row::guide`, switched on by `[worktrees] apply_to` holding `"sidebar"` (the default; `SidebarMetrics::with_guides`), and `for_mode` clears `tree_lines` for all but flat Classic and Devices. Its test `guides_run_from_the_main_checkout_to_each_childs_leading_mark` holds every layout to a tick that ends at the child's status dot. The Orbita guide now meets it: the fork's `tree_padding` was dropped, so the tick runs into the nested highlight up to the dot instead of stopping at the highlight's edge, and the Orbita preset no longer forces `tree_lines`, so `apply_to = []` drops its guides as it does Rounded's. Open for the user: stopping the tick at the highlight again needs an Orbita arm in upstream's test. | 2026-10-22 |
-| Current tab fill | Upstream moved tab colors into `tab_layout/`, one file per View > Tab Layout choice. `[theme_overrides] active_tab = "solid"` is the `theme.active_tab_fill()` call in `Classic::colors` and `Compact::colors`, the two that wash the current tab in the accent; Pills, Underline, Cards, and Curved do not use the accent there and ignore the key. A new layout that washes the current tab needs the same call. | 2026-10-22 |
+| Current tab fill | Upstream moved tab colors into `tab_layout/`, one file per View > Tab Layout choice. `[theme_overrides] active_tab = "solid"` is the `theme.active_tab_fill()` call in `Classic::colors` and `Compact::colors`, the two that wash the current tab in the accent; Pills, Underline, Cards, and Curved do not use the accent there and ignore the key. A new layout that washes the current tab needs the same call. The pane chrome of Herdr 2 splits (`tab_layout/panes/`) does not read the key. | 2026-10-31 |
 | App name in messages | Upstream's menu and command labels are Fluent messages (`menus-herdr`, `menus-about-herdr`, `menus-hide-herdr`, `menus-quit-herdr`, `commands-about`). The fork lists those IDs in `i18n/app_name.rs`, and `i18n::format`'s no-argument branch passes the text through `app_name::named`, which puts the build's name in place of "Herdr". `menus.rs` and the English files stay upstream's verbatim, and the `herdr-commands` build script was dropped. A test fails when a listed ID is gone; a new upstream message naming the app (not the daemon) needs its ID added, and one that gains arguments needs the call moved to the other branch. | 2026-10-29 |
 | Right to left | Upstream mirrors the chrome through `direction::Logical` (`ps`, `pe`, `row`, `inset_s`, `inset_e`) and every Herdr layout's rows. The fork's own code stays physical: the Orbita layout's file, `badge_line`, and `menu.right_edge`, which the `start` match in `menu/chrome.rs` reads as a distance from the window's left. Only the `en-XB` pseudo-locale can show the difference, since English is the one language that ships. Fork lines inside upstream's mirrored chains use the logical calls. Open for the user: mirroring Orbita needs its own change with an `en-XB` test. | 2026-10-30 |
 | Worktree font in Settings | Upstream's rebuilt Settings window lists four faces (`FACES`), and the fork's `SidebarWorktrees` is not one of them, as it was not before: `[sidebar_worktrees]` is set in the config file only. The Fonts page's `size_control` and `specimen_title` still match on every `FontFace`, so they carry arms for it. | 2026-10-16 |
@@ -56,12 +56,18 @@ these, so they cannot conflict:
   `primary_chip`, `counts_x`, and `spaces_header`, which hangs the plus and
   hamburger on the Spaces heading.
 - `i18n/app_name.rs` and its `tests.rs`: the message IDs that name the app.
+- `i18n/errors/daemon_bindings.rs`: the `Localize` mapping of the daemon
+  binding errors.
 - `locales/en-US/orbita.ftl`: the fork's own Fluent messages, IDs prefixed
-  `orbita-`: the layout's name (`LayoutMode::message`) and the worktree
-  face's Fonts labels. Text the fork adds to a migrated module goes here.
+  `orbita-`: the layout's name (`LayoutMode::message`), the worktree face's
+  Fonts labels, and the daemon binding errors. Text the fork adds to a
+  migrated module goes here, unless upstream already has a message that says
+  the same: the Orbita layout reuses `sidebar-new-workspace`,
+  `sidebar-menu-label`, and `sidebar-primary`.
 - Topic test files: `config/tests/{theme_overrides,sidebar_worktrees,daemon_keybindings}.rs`,
   `keymap/tests/daemon_bindings.rs`, `titlebar/orbita_git_button_tests.rs`,
-  `menu/shortcut_editor/tests/daemon_bindings.rs`.
+  `menu/shortcut_editor/tests/daemon_bindings.rs`,
+  `i18n/errors/tests/daemon_bindings.rs`.
 
 What still has to live in upstream's files: the `Orbita` and `SidebarWorktrees`
 variants, the `orbita` flag on `SidebarMetrics` with its arm in
@@ -70,7 +76,9 @@ variants, the `orbita` flag on `SidebarMetrics` with its arm in
 `row::guide`, and `row::trunk_below`, the `active_tab_fill` calls in two tab
 layouts, the
 `Theme` fields and accessors, the `Keymap` daemon bindings, the
-`DaemonBindings` variant of the crate `Error`, the validation
+`DaemonBindings` variant of the crate `Error` with its arm in
+`i18n/errors/root.rs` and the `mod daemon_bindings` lines in `i18n/errors.rs`
+and its `tests.rs`, the validation
 call in the shortcut editor, the `sidebar_worktrees` entry in the list of
 faces that take no terminal-only keys, `menu.svg` in the sorted
 `embedded_icons!` table with the `branch` and `branch_dot` helpers after it,
@@ -157,6 +165,14 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   message ID, as `LayoutMode::message` did, needs an `orbita-` ID for the
   fork's arm. Check `git grep -l '// i18n: migrated'` against the fork's
   files: upstream is migrating module by module, so the set grows.
+- **Errors a window shows.** Since 2026-10-31 `Localize for Error` in
+  `i18n/errors/root.rs` matches every root variant with no `_`, so a fork
+  variant stops the type-check there. Fluent wraps each placeable in the bidi
+  isolation marks `\u{2068}` and `\u{2069}`, so a fork test that reads
+  `local_error` with `starts_with` or a plain `assert_eq!` compiles and fails
+  only when run: it found two of them on that sync. Use `contains`, or write
+  the marks into the expected text. Fork code that shows an error calls
+  `.localize()`, not `.to_string()`.
 - **Upstream adding a parameter to a function the fork calls.**
   `HerdrWindow::reconnect` took a `cx`, which broke the fork's window tests
   (`orbita_tests`, the daemon binding test) in test targets only, and
@@ -191,9 +207,9 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   `worktree_font` field of `RowContext` and the `spaces_header` call, with the
   footer wrapped as `.children((!look.header_actions()).then(|| ...))`, which
   adds no line and keeps upstream's footer at its indentation. After the
-  2026-10-30 sync `render.rs` stands at 981, the window's
-  `window/render.rs` at 969, the crate `Error` file at 378, and `config.rs`
-  at 959. To make room, turn a fork statement into a
+  2026-10-31 sync `render.rs` stands at 936, the window's
+  `window/render.rs` at 977, the crate `Error` file at 380, `config.rs`
+  at 966, and `menu/chrome.rs` at 989. To make room, turn a fork statement into a
   call to a helper in a fork-owned module; do not squeeze upstream's own
   lines.
 - **Gates upstream adds.** `just lint` also runs clippy with
