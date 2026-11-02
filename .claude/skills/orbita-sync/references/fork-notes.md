@@ -7,7 +7,7 @@ files often, so entries name symbols, not paths: find them with a search.
 
 | Area | Decision | Since |
 | --- | --- | --- |
-| Ahead and behind counts | Upstream draws them (`Upstream` in the sidebar row). The fork's own counts were dropped; the Orbita layout passes `row.upstream()` like Herdr's layout and right-aligns them (`counts_x`) on the branch line. Since upstream hangs a badge's counts line beside the branch line (`detail_limit`), that line ends one gap before the pull request's counts, where the badge column used to start; the fork's test measures against `pr-{key}`'s left edge. | 2026-10-21 |
+| Ahead and behind counts | Upstream draws them (`Upstream` in the sidebar row). The fork's own counts were dropped; the Orbita layout passes `row.upstream()` like Herdr's layout. Since 2026-11-02 upstream lays the branch and its counts out as one flex line: the branch shrinks and ellipsizes, and `Upstream::inline_element` takes its natural width right after it. The fork's one hook on that line, `.map(|line| look.trail_counts(line))`, sets `justify_between` on Orbita rows, which right-aligns the counts; replacing it with an offset again would fight upstream's natural-width test. Since upstream hangs a badge's counts line beside the branch line (`detail_limit`), that line ends one gap before the pull request's counts, where the badge column used to start; the fork's test measures against `pr-{key}`'s left edge. | 2026-11-02 |
 | `[daemon_keybindings]` | Kept. The user's `config-gpui.local.toml` binds `"prefix+m" = "cmd-shift-m"`. Upstream runs `[[keys.command]]` chords itself, so the table only adds a native shortcut beside the chord. Its bindings come from the local GUI config even while a device uses its server's keybindings. Upstream lets a daemon `[[keys.command]]` on a direct keystroke take over a catalog default (`Shortcut::catalog_default`), but a prefix chord still gets no native shortcut, and the daemon cannot name a `cmd` key, so the table stays. A keystroke `[pane_keys]` holds is refused, like one a native shortcut holds. | 2026-10-05 |
 | Plugin token badges | Open. The Orbita layout follows rows configured in the daemon's `[ui.sidebar.spaces]` like every layout, and draws its own badge line only on native rows (no configured rows, or `[usage] inline = false`). Whether the badge line stays is the user's call. | 2026-10-03 |
 | Uncommitted mark on rows | Orbita rows draw none: the Orbita layout takes the mark off the badge it hands the shared row (`RowBadge::without_dirty`). Upstream's note mark stays on the badge. The title bar marks the focused checkout with a dot on its branch icon. Upstream's `[sidebar] change_counts = "local"` draws a checkout's counts in a pencil chip that stands for the mark; `without_dirty` keeps the counts, so that chip shows on Orbita rows, and `without_pr` keeps only local counts, since pull request counts belong to the number a `pr` token replaces. The user keeps the default `"pr"`. Open for the user if they switch. | 2026-10-21 |
@@ -53,7 +53,7 @@ these, so they cannot conflict:
 - `sidebar/layouts/orbita.rs` and `sidebar/orbita_tests.rs`. The layout file
   also holds the Orbita preset and the look methods the shared row and the
   sidebar render call: `mark_nested`, `tree_color`, `header_actions`,
-  `primary_chip`, `counts_x`, and `spaces_header`, which hangs the plus and
+  `primary_chip`, `trail_counts`, and `spaces_header`, which hangs the plus and
   hamburger on the Spaces heading.
 - `i18n/app_name.rs` and its `tests.rs`: the message IDs that name the app.
 - `i18n/errors/daemon_bindings.rs`: the `Localize` mapping of the daemon
@@ -207,9 +207,9 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   `worktree_font` field of `RowContext` and the `spaces_header` call, with the
   footer wrapped as `.children((!look.header_actions()).then(|| ...))`, which
   adds no line and keeps upstream's footer at its indentation. After the
-  2026-10-31 sync `render.rs` stands at 936, the window's
+  2026-11-02 sync `render.rs` stands at 936, the window's
   `window/render.rs` at 977, the crate `Error` file at 380, `config.rs`
-  at 966, and `menu/chrome.rs` at 989. To make room, turn a fork statement into a
+  at 981, and `menu/chrome.rs` at 989. To make room, turn a fork statement into a
   call to a helper in a fork-owned module; do not squeeze upstream's own
   lines.
 - **Gates upstream adds.** `just lint` also runs clippy with
@@ -275,7 +275,7 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   `theme`. The `Error` enum holds no fork variant since 2026-10-21. Then run
   `python3 scripts/check-sorted.py`.
 - Upstream tests that name the application menu or its items "Herdr"
-  (`menus/tests.rs`, `about.rs`). The fork's build-set name makes that menu
+  (`menus/tests.rs`, `about/tests.rs`). The fork's build-set name makes that menu
   `crate::WINDOW_TITLE`, so take upstream's test and write the title through
   it. On 2026-10-26 upstream's QA menu flag rewrote the test the fork had
   ported; the rest of the file merged cleanly.
