@@ -11,15 +11,16 @@ files often, so entries name symbols, not paths: find them with a search.
 | `[daemon_keybindings]` | Kept. The user's `config-gpui.local.toml` binds `"prefix+m" = "cmd-shift-m"`. Upstream runs `[[keys.command]]` chords itself, so the table only adds a native shortcut beside the chord. Its bindings come from the local GUI config even while a device uses its server's keybindings. Upstream lets a daemon `[[keys.command]]` on a direct keystroke take over a catalog default (`Shortcut::catalog_default`), but a prefix chord still gets no native shortcut, and the daemon cannot name a `cmd` key, so the table stays. A keystroke `[pane_keys]` holds is refused, like one a native shortcut holds. | 2026-10-05 |
 | Plugin token badges | Open. The Orbita layout follows rows configured in the daemon's `[ui.sidebar.spaces]` like every layout, and draws its own badge line only on native rows (no configured rows, or `[usage] inline = false`). Whether the badge line stays is the user's call. | 2026-10-03 |
 | Uncommitted mark on rows | Orbita rows draw none: the Orbita layout takes the mark off the badge it hands the shared row (`RowBadge::without_dirty`). Upstream's note mark stays on the badge. The title bar marks the focused checkout with a dot on its branch icon. Upstream's `[sidebar] change_counts = "local"` draws a checkout's counts in a pencil chip that stands for the mark; `without_dirty` keeps the counts, so that chip shows on Orbita rows, and `without_pr` keeps only local counts, since pull request counts belong to the number a `pr` token replaces. The user keeps the default `"pr"`. Open for the user if they switch. | 2026-10-21 |
+| Sheprd rename | Upstream renamed Herdr UI to Sheprd on 2026-11-03: every crate is `sheprd-*` (`crates/sheprd-gpui`), `HerdrWindow` is `SheprdWindow`, the binary is `sheprd` (`--bin sheprd`), and `just bundle` builds `target/release/Sheprd.app` with `Contents/MacOS/sheprd`. Kept as they were: `~/.config/herdr/` with `config-gpui.local.toml`, the log at `~/.local/state/herdr/gpui/logs/herdr-gpui.jsonl`, the `HERDR_BUILD_*` build variables, and the Fluent message IDs (`menus-herdr`). The fork's `HERDR_APP_NAME` keeps its name beside them and defaults to "Sheprd". `scripts/fork/update.sh` installs from `Sheprd.app` and checks for a running Orbita by any executable in its bundle. | 2026-11-04 |
 | Orbita style | Upstream replaced the style traits with one `SidebarMetrics` value. The Orbita look is the rounded comfortable preset run through `SidebarMetrics::orbita`, which sets one `orbita` flag; everything the flag means is a `SidebarLook` method in the Orbita layout's file. Its child indent carries the guide's tick, so upstream code that reads `child_indent` lines up with Orbita rows. | 2026-10-08 |
 | Rows under a host header | Upstream steps rows in under their host (`RowContext::nest`). An Orbita highlight starts at the row's whole indent, so with several hosts it steps in with the row; Herdr's layouts keep full-width highlights. Open for the user if they list several hosts. | 2026-10-08 |
 | Fold chevron icon | Upstream ships `icons/chevron-right.svg` and registers it. The fork's copy and its registry entry were dropped. | 2026-10-08 |
-| Bundle signing | `scripts/fork/update.sh` signs ad hoc, without the hardened runtime, so upstream's `Herdr.entitlements` is not applied: the `NSMicrophoneUsageDescription` key in upstream's `Info.plist` is what lets a pane ask for the microphone. If the script ever signs with `--options runtime`, pass the entitlements file too. `just bundle` also builds the Swift `herdr-nearby` with `xcrun swiftc` and copies a pinned `herdr-core` it downloads once into `target/release`; offline it warns and goes on without one. The script's `codesign --deep` covers both. | 2026-10-31 |
+| Bundle signing | `scripts/fork/update.sh` signs ad hoc, without the hardened runtime, so upstream's `Herdr.entitlements` is not applied: the `NSMicrophoneUsageDescription` key in upstream's `Info.plist` is what lets a pane ask for the microphone. If the script ever signs with `--options runtime`, pass the entitlements file too. `just bundle` also builds the Swift `sheprd-nearby` with `xcrun swiftc` and copies a pinned `herdr-core` it downloads once into `target/release`; offline it warns and goes on without one. The script's `codesign --deep` covers both. | 2026-10-31 |
 | Sidebar search field | Upstream made the field the Spaces heading (`search_heading`, on with `show_sidebar_search`). The Orbita layout keeps it and hangs its plus and hamburger at the heading's right, beside the field; with search off they sit on the plain header. The fork's header test measures the buttons' right margin against the field's left inset. Open for the user: whether Orbita should hide the field. | 2026-10-14 |
 | Daemon binding errors | The `[daemon_keybindings]` and unbound-command errors are `keymap::daemon_bindings::Error`, in `keymap/daemon_bindings/error.rs`, wrapped once by the root `Error::DaemonBindings` (sorted after `Daemon`). Upstream's rule since 2026-10-24 names a feature's error `Error` in its module's `error.rs`, and its refactor shrank the root `error.rs` to about 370 lines, so the old boxing into `Error::ConfigFile` was dropped. Tests match the variant; a transparent variant's `source()` is the inner error's source, so the cause test reads it from the inner error. New fork errors go in that enum. What a window shows comes from `Localize` (`docs/i18n.md`): `i18n/errors/daemon_bindings.rs` maps every variant to an `orbita-error-daemon-bindings-*` message in `orbita.ftl`, whose English reads exactly as `Display` does, and the palette's runner shows `error.localize()`. A new variant needs its arm and its message to compile. | 2026-10-31 |
 | Window backdrop | Upstream's `[backdrop]` paints every panel with its own color at the backdrop's opacity. The fork's `chrome` override replaces `theme.surface`, so it gets the same treatment with no code of its own. `titlebar::render` keeps upstream's signature; the tinted or flat choice is the `style` argument of `titlebar::bar`. | 2026-10-11 |
 | Shortcut editor | Upstream's Herdr > Keyboard Shortcuts writes `[keybindings]`. It validates a draft through `Keymap::with_edited_overrides`, which carries the loaded `[daemon_keybindings]`, so it refuses a key the table holds instead of saving a config that no longer loads. Any new upstream surface that writes keybindings needs the same call. | 2026-10-11 |
-| "Herdr UI" in messages | Upstream names the client "Herdr UI" in errors, notes, and dialogs. The fork's build-set name covers the window title, process name, application menu, and About box only, so Orbita's messages say "Herdr UI". Open for the user. | 2026-10-11 |
+| "Sheprd" in messages | Upstream names the client "Sheprd" ("Herdr UI" before 2026-11-03) in errors, notes, dialogs, and the CLI's help. The fork's build-set name covers the window title, process name, application menu, and About box only, so Orbita's messages say "Sheprd". Open for the user. | 2026-11-04 |
 | Terminal-only font keys | Upstream's `[terminal]`-only keys (`line_height`, `weight`) are refused for `[sidebar_worktrees]` as for `[sidebar]`, `[tabs]`, and `[ui]`: the fork's face is in the list `Config` runs through `reject_terminal_keys`, so the key is reported in `unknown_keys` and ignored. A terminal-only key upstream adds to that function needs no fork code. | 2026-10-13 |
 | Repository and device icons | Upstream's `show_repository_icons` and `show_device_icons` apply to the Orbita layout with no fork code: the layout hands the shared row the icon its context carries, and `LayoutMode::device_icons` leaves out only Orca and Minimal. | 2026-10-14 |
 | Device themes | `[theme_overrides]` apply to the app theme only: `Config::theme_with_directories` runs upstream's shared `resolve` and then the overrides, for every theme source, Follow Herdr included. A device's `theme` (`theme_named`) paints only the terminal and takes none. | 2026-10-14 |
@@ -29,7 +30,7 @@ files often, so entries name symbols, not paths: find them with a search.
 | Trunk under a note | Upstream carries a worktree child's tree guide on past its note and ports lines (`RowLayout::trunk_below`), and a test asks it of every layout that draws a tree. The Orbita layout passes `row::tree_gutter(cx)` to upstream's `row::trunk_below`, as Herdr's layout does; `trunk_below` and the row's `guide` read `tree_color` from the look, so the trunk matches the Orbita guide's color. | 2026-10-22 |
 | Worktree guides | Upstream draws worktree guides in every layout through the shared `row::guide`, switched on by `[worktrees] apply_to` holding `"sidebar"` (the default; `SidebarMetrics::with_guides`), and `for_mode` clears `tree_lines` for all but flat Classic and Devices. Its test `guides_run_from_the_main_checkout_to_each_childs_leading_mark` holds every layout to a tick that ends at the child's status dot. The Orbita guide now meets it: the fork's `tree_padding` was dropped, so the tick runs into the nested highlight up to the dot instead of stopping at the highlight's edge, and the Orbita preset no longer forces `tree_lines`, so `apply_to = []` drops its guides as it does Rounded's. Open for the user: stopping the tick at the highlight again needs an Orbita arm in upstream's test. | 2026-10-22 |
 | Current tab fill | Upstream moved tab colors into `tab_layout/`, one file per View > Tab Layout choice. `[theme_overrides] active_tab = "solid"` is the `theme.active_tab_fill()` call in `Classic::colors` and `Compact::colors`, the two that wash the current tab in the accent; Pills, Underline, Cards, and Curved do not use the accent there and ignore the key. A new layout that washes the current tab needs the same call. The pane chrome of Herdr 2 splits (`tab_layout/panes/`) does not read the key. | 2026-10-31 |
-| App name in messages | Upstream's menu and command labels are Fluent messages (`menus-herdr`, `menus-about-herdr`, `menus-hide-herdr`, `menus-quit-herdr`, `commands-about`). The fork lists those IDs in `i18n/app_name.rs`, and `i18n::format`'s no-argument branch passes the text through `app_name::named`, which puts the build's name in place of "Herdr". `menus.rs` and the English files stay upstream's verbatim, and the `herdr-commands` build script was dropped. A test fails when a listed ID is gone; a new upstream message naming the app (not the daemon) needs its ID added, and one that gains arguments needs the call moved to the other branch. | 2026-10-29 |
+| App name in messages | Upstream's menu and command labels are Fluent messages (`menus-herdr`, `menus-about-herdr`, `menus-hide-herdr`, `menus-quit-herdr`, `commands-about`). The fork lists those IDs in `i18n/app_name.rs`, and `i18n::format`'s no-argument branch passes the text through `app_name::named`, which puts the build's name in place of "Sheprd", the name upstream's text and the build script's default use since the rename. `menus.rs` and the English files stay upstream's verbatim, and the `sheprd-commands` build script was dropped. A test fails when a listed ID is gone; a new upstream message naming the app (not the daemon) needs its ID added, and one that gains arguments needs the call moved to the other branch. | 2026-10-29 |
 | Right to left | Upstream mirrors the chrome through `direction::Logical` (`ps`, `pe`, `row`, `inset_s`, `inset_e`) and every Herdr layout's rows. The fork's own code stays physical: the Orbita layout's file, `badge_line`, and `menu.right_edge`, which the `start` match in `menu/chrome.rs` reads as a distance from the window's left. Only the `en-XB` pseudo-locale can show the difference, since English is the one language that ships. Fork lines inside upstream's mirrored chains use the logical calls. Open for the user: mirroring Orbita needs its own change with an `en-XB` test. | 2026-10-30 |
 | Worktree font in Settings | Upstream's rebuilt Settings window lists four faces (`FACES`), and the fork's `SidebarWorktrees` is not one of them, as it was not before: `[sidebar_worktrees]` is set in the config file only. The Fonts page's `size_control` and `specimen_title` still match on every `FontFace`, so they carry arms for it. | 2026-10-16 |
 
@@ -149,11 +150,11 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   binds other keys.
 - **Code upstream moves into a new crate.** Git carries a fork hunk into the
   moved file without a conflict, but the new crate lacks what the hunk relied
-  on in `herdr-gpui`. On 2026-10-24 the command catalog moved to
-  `herdr-commands`, and the palette's About label
+  on in `sheprd-gpui`. On 2026-10-24 the command catalog moved to
+  `sheprd-commands`, and the palette's About label
   (`env!("HERDR_BUILD_APP_NAME")`) stopped compiling, since only
-  `herdr-gpui`'s build script set the variable. The rebase did not stop; the
-  first gate's `lint` failed. Type-check the workspace, not only `herdr-gpui`,
+  `sheprd-gpui`'s build script set the variable. The rebase did not stop; the
+  first gate's `lint` failed. Type-check the workspace, not only `sheprd-gpui`,
   after a range that splits crates out.
 - **Text in a module marked `// i18n: migrated`.** `just check-i18n` refuses
   a string literal that reads as English in such a file, and in every file
@@ -174,7 +175,7 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   the marks into the expected text. Fork code that shows an error calls
   `.localize()`, not `.to_string()`.
 - **Upstream adding a parameter to a function the fork calls.**
-  `HerdrWindow::reconnect` took a `cx`, which broke the fork's window tests
+  `SheprdWindow::reconnect` took a `cx`, which broke the fork's window tests
   (`orbita_tests`, the daemon binding test) in test targets only, and
   `Target::capture` took the pane's selection, which the daemon binding runner
   fills with `plugin_selection()` like upstream's `invoke_custom_command`.
@@ -183,11 +184,11 @@ git merged them cleanly. The type-check finds the first four; only the tests and
 - **Pull request fixtures.** Upstream shows a cached pull request only under
   the device it was found for, which on this machine needs a verified local
   daemon. A fork fixture that seeds `pr_cache` directly draws no badge and its
-  test fails on a missing `pr-{key}`; seed through `HerdrWindow::seed_pr`, as
+  test fails on a missing `pr-{key}`; seed through `SheprdWindow::seed_pr`, as
   upstream's own fixtures do.
 - **Controls the chrome reaches by keyboard.** Upstream names every sidebar
   button for screen readers and makes it an F6-region stop through
-  `HerdrWindow::sidebar_button` (`chrome_stop`). The Orbita header's plus and
+  `SheprdWindow::sidebar_button` (`chrome_stop`). The Orbita header's plus and
   hamburger (`spaces_actions`, which takes the window for it) go through it
   too. A control the fork adds to the chrome needs the same call; nothing
   fails without it.
@@ -207,14 +208,20 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   `worktree_font` field of `RowContext` and the `spaces_header` call, with the
   footer wrapped as `.children((!look.header_actions()).then(|| ...))`, which
   adds no line and keeps upstream's footer at its indentation. After the
-  2026-11-02 sync `render.rs` stands at 936, the window's
+  2026-11-04 sync `render.rs` stands at 949, the window's
   `window/render.rs` at 977, the crate `Error` file at 380, `config.rs`
-  at 981, and `menu/chrome.rs` at 989. To make room, turn a fork statement into a
+  at 987, and `menu/chrome.rs` at 989. To make room, turn a fork statement into a
   call to a helper in a fork-owned module; do not squeeze upstream's own
   lines.
 - **Gates upstream adds.** `just lint` also runs clippy with
   `--no-default-features`, and `just ci` runs `test-mockup-wait`, which needs
-  `python3`; the usage tests need `jq`. `just check-sorted` refuses a
+  `python3`; the usage tests need `jq`. `check-artwork` (since 2026-11-03)
+  runs upstream's icon generator, whose `zip(..., strict=True)` needs Python
+  3.10, and this Mac has only the system 3.9.6: the recipe fails with a
+  `TypeError` before comparing anything, and `just` stops there, so `lint`
+  after it does not run. On 2026-11-04 the test passed under `runpy` with a
+  `builtins.zip` stand-in that checks the lengths, without editing a file;
+  run `just lint` on its own after it. `just check-sorted` refuses a
   `keep-sorted` region out of order, such as the `embedded_icons!` table: a
   fork entry in one goes in its sorted place, not at the end.
 - **Upstream tests that read this machine's config.** The device theme
@@ -222,7 +229,7 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   `~/.config/ghostty/themes` here holds themes CI does not have, so two of
   them fail on this machine and pass with an empty `XDG_CONFIG_HOME`. Run the
   gates as CI does: `XDG_CONFIG_HOME=<empty dir> scripts/fork/update.sh --no-sync`.
-  Three `herdr-orchestrator` tests in `tests::opening_script` expect only the
+  Three `sheprd-orchestrator` tests in `tests::opening_script` expect only the
   fixture's `claude` to be found, but the probe (`installed_programs_script`)
   adds a login shell's PATH, and `/etc/paths.d/homebrew` puts
   `/opt/homebrew/bin`, where `codex` lives, on every login PATH here; no
@@ -248,8 +255,26 @@ git merged them cleanly. The type-check finds the first four; only the tests and
   artifacts are named without the checkout's path, so a worktree that shares
   `target/` overwrites this checkout's binaries, and Cargo then calls them
   fresh: a `cargo test` here ran upstream's binary. Give the other worktree
-  its own `CARGO_TARGET_DIR`, or run `cargo clean -p herdr-gpui` here before
+  its own `CARGO_TARGET_DIR`, or run `cargo clean -p sheprd-gpui` here before
   trusting another build.
+- **Upstream renaming crates, directories, and types.** The 2026-11-03
+  rename moved about 6,000 files. Run the rebase with
+  `GIT_CONFIG_COUNT=3 GIT_CONFIG_KEY_0=merge.renameLimit GIT_CONFIG_VALUE_0=50000 GIT_CONFIG_KEY_1=merge.directoryRenames GIT_CONFIG_VALUE_1=true GIT_CONFIG_KEY_2=diff.renameLimit GIT_CONFIG_VALUE_2=50000`
+  exported, for the rebase and every `--continue`, so git follows the moves
+  and carries fork-added files into the renamed directories instead of
+  stopping on each. A fork file in a directory upstream never had
+  (`sidebar/orbita_tests/`) is not carried: it lands under the old prefix,
+  so check `git ls-tree -r --name-only HEAD | grep '^crates/herdr-'` after.
+  Fork lines that name a renamed type or crate do not conflict and do not
+  compile; `git rebase -x` with a `perl -pi` over the files each commit
+  touched, amending when it changed something, fixed all 42 commits, and
+  caught a fork line a 3-way merge had taken with the old name. Run
+  `cargo fmt` per commit too: a longer name reorders imports.
+- **Upstream tests that size marks with the font.** `mark_sizes` holds every
+  `LayoutMode::ALL` layout's dots, icons, and fold chevron to grow with
+  `[sidebar] size` through `scaled`; Orbita's chevron column
+  (`chevron_width`) and icon take `scaled` too. A mark the fork adds to a row
+  needs the same.
 - **Test placement.** Test bodies live in `tests.rs` or `tests/` topic files,
   never inline in a production file. A fork test written inline has to move.
 - **Fixtures other fork commits set up.** Dropping a fork commit can drop a line

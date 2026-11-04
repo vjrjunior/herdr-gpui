@@ -27,6 +27,10 @@ for arg in "$@"; do
 done
 
 branch="${FORK_BRANCH:-vjr}"
+export GIT_CONFIG_COUNT=3 \
+    GIT_CONFIG_KEY_0=diff.renameLimit GIT_CONFIG_VALUE_0=50000 \
+    GIT_CONFIG_KEY_1=merge.renameLimit GIT_CONFIG_VALUE_1=50000 \
+    GIT_CONFIG_KEY_2=merge.directoryRenames GIT_CONFIG_VALUE_2=true
 scripts=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "$(git rev-parse --show-toplevel)"
 
@@ -105,12 +109,12 @@ git log --no-merges --format='%h %s' "$branch"..upstream/main -- \
 
 echo
 echo "== Config keys and defaults upstream changed (config-gpui.example.toml)"
-example=$(git diff --unified=0 "$base" upstream/main -- crates/herdr-gpui/config-gpui.example.toml |
+example=$(git diff --unified=0 "$base" upstream/main -- crates/sheprd-gpui/config-gpui.example.toml |
     grep -E '^[+-][^+-]' || true)
 if [ -z "$example" ]; then
     echo "none"
 else
-    printf '%s\n' "$example" | head -80
+    printf '%s\n' "$example" | sed -n '1,80p'
     lines=$(printf '%s\n' "$example" | wc -l | tr -d ' ')
     if [ "$lines" -gt 80 ]; then
         echo "... $((lines - 80)) more lines"

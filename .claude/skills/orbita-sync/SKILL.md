@@ -1,11 +1,11 @@
 ---
 name: orbita-sync
-description: Bring upstream herdr-gpui (penso/herdr-gpui) updates into the Orbita fork, end to end. Checks what upstream added, rebases the `vjr` branch onto it, resolves conflicts and the breakages git does not flag, runs the gates, installs Orbita.app, and finishes with a report of what came in and what changed. Use whenever the user asks to check for, bring, pull, sync, or update Orbita with herdr-gpui or upstream changes, in any phrasing or language ("veja se o herdr-gpui tem atualizações", "traz os updates pro Orbita", "confira se temos mais atualizações", "sync the fork", "rebase vjr onto upstream"), even when they only ask whether there is anything new.
+description: Bring upstream herdr-gpui (Sheprd, penso/herdr-gpui) updates into the Orbita fork, end to end. Checks what upstream added, rebases the `vjr` branch onto it, resolves conflicts and the breakages git does not flag, runs the gates, installs Orbita.app, and finishes with a report of what came in and what changed. Use whenever the user asks to check for, bring, pull, sync, or update Orbita with herdr-gpui or upstream changes, in any phrasing or language ("veja se o herdr-gpui tem atualizações", "traz os updates pro Orbita", "confira se temos mais atualizações", "sync the fork", "rebase vjr onto upstream"), even when they only ask whether there is anything new.
 ---
 
 # Syncing Orbita with upstream herdr-gpui
 
-Orbita is a personal fork of `penso/herdr-gpui`. `main` is a fast-forward mirror
+Orbita is a personal fork of `penso/herdr-gpui`, which upstream renamed Sheprd. `main` is a fast-forward mirror
 of `upstream/main`; the fork's changes live as a stack of commits on `vjr`,
 rebased onto `main` at every sync. `scripts/fork/update.sh` does the mechanical
 part. This skill is the judgment around it: what to do when the rebase stops,
@@ -188,7 +188,7 @@ Each stop is one fork commit that no longer applies. For each one:
 4. **Type-check before continuing.** Most breakage arrives with no conflict:
 
    ```sh
-   cargo check --locked -p herdr-gpui --all-targets --all-features
+   cargo check --locked -p sheprd-gpui --all-targets --all-features
    ```
 
    Fix what the commit being applied caused, in that commit. The fork notes list
@@ -196,14 +196,14 @@ Each stop is one fork commit that no longer applies. For each one:
 5. **Run focused tests when the stop rewrote behavior**, not at every stop:
 
    ```sh
-   cargo test --locked -p herdr-gpui --bin herdr-gpui -- sidebar orbita
+   cargo test --locked -p sheprd-gpui --bin sheprd -- sidebar orbita
    ```
 
    When an upstream test fails because the fork added a layout or a variant,
    make the fork satisfy the test. Editing upstream's tests to exempt the fork
    grows the diff every future sync has to carry.
 6. **Keep the docs honest in the same commit.** The Orbita paragraph of
-   `crates/herdr-gpui/README.md` and `config-gpui.example.toml` describe
+   `crates/sheprd-gpui/README.md` and `config-gpui.example.toml` describe
    behavior; when the port changes behavior, change them.
 7. **Continue.** Stage everything first: `--continue` refuses unstaged changes.
 
